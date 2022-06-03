@@ -4,7 +4,7 @@ KinectRenderer::KinectRenderer()
 {
 	glfwInit();
 
-	window = std::make_shared<Window>("kinect", 800, 600);
+	window = CreateKinectWindow("Kinect", 800, 600);
 
 	// Initliase GLAD so we have access to OpenGL functions
 	assert(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) != 0);
@@ -25,7 +25,7 @@ void KinectRenderer::OpenGLSetup()
 
 void KinectRenderer::MainLoop() 
 {
-	while (!glfwWindowShouldClose(window->window)) {
+	while (!glfwWindowShouldClose(window.get())) {
 		frame_time = glfwGetTime() - prev_frame_time;
 		prev_frame_time = glfwGetTime();
 
@@ -35,7 +35,8 @@ void KinectRenderer::MainLoop()
 
 		// Draw
 
-		glfwSwapBuffers(window->window);
+
+		glfwSwapBuffers(window.get());
 		glfwPollEvents();
 	}
 

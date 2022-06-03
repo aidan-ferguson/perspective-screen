@@ -14,7 +14,7 @@ public:
 
 private:
 	std::string window_name = std::string("Kinect");
-	std::shared_ptr<Window> window = nullptr;
+	std::shared_ptr<GLFWwindow> window = nullptr;
 	double frame_time = 0, prev_frame_time = 0;
 
 	void OpenGLSetup();
