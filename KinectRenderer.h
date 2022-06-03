@@ -18,4 +18,6 @@ private:
 	double frame_time = 0, prev_frame_time = 0;
 
 	void OpenGLSetup();
+	void HandleInput();
+	bool IsKeyPressed(int key_code);
 };
