@@ -1,7 +1,3 @@
-#include <stdexcept>
-#include <assert.h>
-#include <iostream>
-
 #include "KinectSensor.h"
 
 KinectSensor::KinectSensor() 
@@ -20,7 +16,7 @@ void KinectSensor::OpenColourStream()
 {
 	IColorFrameSource* framesource = nullptr;
 	assert( sensor->get_ColorFrameSource(&framesource) == S_OK );
-	assert( framesource->OpenReader(&colourReader) == S_OK );
+	assert( framesource->OpenReader(&colour_reader) == S_OK );
 	if (framesource) {
 		framesource->Release();
 	}
@@ -29,7 +25,7 @@ void KinectSensor::OpenColourStream()
 void KinectSensor::GetColourFrame(byte* data)
 {
 	IColorFrame* frame = NULL;
-	if (colourReader->AcquireLatestFrame(&frame) == S_OK) {
+	if (colour_reader->AcquireLatestFrame(&frame) == S_OK) {
 		if (frame) {
 			std::cout << "here" << std::endl;
 			frame->CopyConvertedFrameDataToArray(width * height * 4, data, ColorImageFormat_Bgra);
