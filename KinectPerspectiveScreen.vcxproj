@@ -144,18 +144,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="KinectRenderer.cpp" />
     <ClCompile Include="KinectSensor.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PointCloud.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="KinectRenderer.h" />
     <ClInclude Include="KinectSensor.h" />
+    <ClInclude Include="PointCloud.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FragmentShader.glsl" />
+    <None Include="VertexShader.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

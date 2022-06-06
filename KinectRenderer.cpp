@@ -5,59 +5,86 @@ KinectRenderer::KinectRenderer()
 	glfwInit();
 
 	window = CreateKinectWindow("Kinect", 800, 600);
+	glfwGetCursorPos(window.get(), &prev_mouse_x, &prev_mouse_y);
 
 	// Initliase GLAD so we have access to OpenGL functions
 	assert(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) != 0);
 
 	OpenGLSetup();
+
+	
 }
 
 void KinectRenderer::OpenGLSetup()
 {
+	glPointSize(2.0f);
 	glEnable(GL_DEPTH_TEST);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 bool KinectRenderer::IsKeyPressed(int key_code) {
 	return (glfwGetKey(window.get(), key_code) == GLFW_PRESS);
 }
 
+void KinectRenderer::GetMouseDelta(double& d_x, double& d_y)
+{
+	double mouse_x, mouse_y;
+	glfwGetCursorPos(window.get(), &mouse_x, &mouse_y);
+ 
+	// Y axis is inverted so it is the other way around
+	d_x = mouse_x - prev_mouse_x;
+	d_y = prev_mouse_y - mouse_y;
+
+	// Set the new previous positions
+	prev_mouse_x = mouse_x;
+	prev_mouse_y = mouse_y;
+}
+
 void KinectRenderer::HandleInput() {
-	/*
 	if (IsKeyPressed(GLFW_KEY_W)) {
-		cam->SetPosition(cam->GetPosition() + (cam->GetDirection() * cam->GetCameraSpeed() * (float)frame_time));
+		camera.position += camera.direction * camera.camera_speed * (float)frame_time;
 	}
 	if (IsKeyPressed(GLFW_KEY_S)) {
-		cam->SetPosition(cam->GetPosition() - (cam->GetDirection() * cam->GetCameraSpeed() * (float)frame_time));
+		camera.position -= camera.direction * camera.camera_speed * (float)frame_time;
 	}
 	if (IsKeyPressed(GLFW_KEY_A)) {
-		cam->SetPosition(cam->GetPosition() - (glm::cross(cam->GetDirection(), cam->GetUpVector()) * cam->GetCameraSpeed() * (float)frame_time));
+		camera.position -= glm::cross(camera.direction, camera.up) * camera.camera_speed * (float)frame_time;
 	}
 	if (IsKeyPressed(GLFW_KEY_D)) {
-		cam->SetPosition(cam->GetPosition() + (glm::cross(cam->GetDirection(), cam->GetUpVector()) * cam->GetCameraSpeed() * (float)frame_time));
-	}*/
+		camera.position += glm::cross(camera.direction, camera.up) * camera.camera_speed * (float)frame_time;
+	}
 	if (IsKeyPressed(GLFW_KEY_ESCAPE)) {
 		glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
-	/*
-	double mouseDX = 0;
-	double mouseDY = 0;
+	
+	double d_x, d_y;
+	GetMouseDelta(d_x, d_y);
 
-	if (GetMouseDelta(mouseDX, mouseDY)) {
-		cam->SetYaw(cam->GetYaw() + mouseDX * cam->GetSensitivity());
-		// Clamped to -89 and 89 because after that the image will flip
-		cam->SetPitch(std::clamp((float)(cam->GetPitch() + mouseDY * cam->GetSensitivity()), -89.0f, 89.0f));
-	}
-	*/
+	camera.yaw += d_x * camera.sensitivity;
+	// Clamped to -89 and 89 because after that the image will flip
+	camera.pitch = glm::clamp((float)(camera.pitch + d_y * camera.sensitivity), -89.0f, 89.0f);
+	camera.UpdateDirection();
 }
 
 void KinectRenderer::MainLoop() 
 {
+	CameraSpacePoint* csp = sensor.GetDepthPoints();
+
+	std::vector<Point> points;
+	for (int i = 0; i < 512*424; i++) {
+		CameraSpacePoint p = csp[i];
+		Point point(glm::vec3(p.X, p.Y, p.Z), glm::vec3(1.0f, 1.0f, 1.0f));
+		points.push_back(point);
+	}
+	PointCloud point_cloud(points);
+
+	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
+
 	while (!glfwWindowShouldClose(window.get())) {
 		frame_time = glfwGetTime() - prev_frame_time;
 		prev_frame_time = glfwGetTime();
@@ -66,7 +93,13 @@ void KinectRenderer::MainLoop()
 
 		HandleInput();
 
-		// Draw
+		glUseProgram(point_cloud_shader);
+		int width, height;
+		glfwGetWindowSize(window.get(), &width, &height);
+		SetUniformMat4(point_cloud_shader, "projection_matrix", camera.GetProjectionMatrix(width, height));
+		SetUniformMat4(point_cloud_shader, "view_matrix", camera.GetViewMatrix());
+		SetUniformMat4(point_cloud_shader, "model_matrix", glm::mat4(1.0f));
+		point_cloud.Draw();
 
 		glfwSwapBuffers(window.get());
 		glfwPollEvents();

@@ -1,6 +1,6 @@
 #include "Shader.h"
 
-int CreateShaderFromFile(std::string vertex_filename, std::string fragment_filename)
+int CreateShaderFromFiles(std::string vertex_filename, std::string fragment_filename)
 {
 	int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 	int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -93,12 +93,12 @@ void CompileShader(int shader, std::string shader_code)
 	}
 }
 
-void SetUniformVec3(int program_id, std::string name, glm::vec3* value) {
-	glUniform3fv(glGetUniformLocation(program_id, name.c_str()), 1, glm::value_ptr(*value));
+void SetUniformVec3(int program_id, std::string name, glm::vec3 value) {
+	glUniform3fv(glGetUniformLocation(program_id, name.c_str()), 1, glm::value_ptr(value));
 }
 
-void SetUniformMat4(int program_id, std::string name, glm::mat4* value) {
-	glUniformMatrix4fv(glGetUniformLocation(program_id, name.c_str()), 1, GL_FALSE, &(*value)[0][0]);
+void SetUniformMat4(int program_id, std::string name, glm::mat4 value) {
+	glUniformMatrix4fv(glGetUniformLocation(program_id, name.c_str()), 1, GL_FALSE, &(value)[0][0]);
 }
 
 void SetUniformInt(int program_id, std::string name, int value) {
