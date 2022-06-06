@@ -6,6 +6,7 @@
 #include <string>
 
 #include "Window.h"
+#include "Shader.h"
 
 class KinectRenderer {
 public:

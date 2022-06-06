@@ -68,7 +68,6 @@ void KinectRenderer::MainLoop()
 
 		// Draw
 
-
 		glfwSwapBuffers(window.get());
 		glfwPollEvents();
 	}
