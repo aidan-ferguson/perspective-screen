@@ -17,7 +17,7 @@ KinectRenderer::KinectRenderer()
 
 void KinectRenderer::OpenGLSetup()
 {
-	glPointSize(2.0f);
+	glPointSize(1.0f);
 	glEnable(GL_DEPTH_TEST);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -73,14 +73,7 @@ void KinectRenderer::HandleInput() {
 
 void KinectRenderer::MainLoop() 
 {
-	CameraSpacePoint* csp = sensor.GetDepthPoints();
-
-	std::vector<Point> points;
-	for (int i = 0; i < 512*424; i++) {
-		CameraSpacePoint p = csp[i];
-		Point point(glm::vec3(p.X, p.Y, p.Z), glm::vec3(1.0f, 1.0f, 1.0f));
-		points.push_back(point);
-	}
+	std::vector<Point> points = sensor.GetDepthPoints();
 	PointCloud point_cloud(points);
 
 	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
@@ -90,6 +83,10 @@ void KinectRenderer::MainLoop()
 		prev_frame_time = glfwGetTime();
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if (IsKeyPressed(GLFW_KEY_F)) {
+			__debugbreak();
+		}
 
 		HandleInput();
 

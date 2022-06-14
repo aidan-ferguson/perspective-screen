@@ -5,13 +5,17 @@
 #include <iostream>
 #include <Kinect.h>
 
+// temp
+#include <vector>
+#include "PointCloud.h"
+
 class KinectSensor {
 public:
 	KinectSensor();
 	~KinectSensor();
 	
 	void GetColourFrame(byte* data);
-	CameraSpacePoint* GetDepthPoints();
+	std::vector<Point> GetDepthPoints();
 
 private:
 	IKinectSensor* sensor = nullptr;
@@ -19,6 +23,4 @@ private:
 	ICoordinateMapper* mapper = nullptr;
 	IMultiSourceFrameReader* reader = nullptr;
 
-	int width = 512;
-	int height = 424;
 };
