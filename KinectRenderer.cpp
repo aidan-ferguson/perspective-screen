@@ -73,8 +73,10 @@ void KinectRenderer::HandleInput() {
 
 void KinectRenderer::MainLoop() 
 {
-	std::vector<Point> points = sensor.GetDepthPoints();
-	PointCloud point_cloud(points);
+	// points take the following format:
+	//	each point has 6 floats: 3 for position and 3 for colour
+	std::shared_ptr<float> points(new float[1920*1080*6]);
+	PointCloud point_cloud(points, 1920*1080);
 
 	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
 
@@ -84,10 +86,6 @@ void KinectRenderer::MainLoop()
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (IsKeyPressed(GLFW_KEY_F)) {
-			__debugbreak();
-		}
-
 		HandleInput();
 
 		glUseProgram(point_cloud_shader);
@@ -96,6 +94,10 @@ void KinectRenderer::MainLoop()
 		SetUniformMat4(point_cloud_shader, "projection_matrix", camera.GetProjectionMatrix(width, height));
 		SetUniformMat4(point_cloud_shader, "view_matrix", camera.GetViewMatrix());
 		SetUniformMat4(point_cloud_shader, "model_matrix", glm::mat4(1.0f));
+
+		if (sensor.GetDepthPoints(points)) {
+			point_cloud.UpdatePoints(points);
+		}
 		point_cloud.Draw();
 
 		glfwSwapBuffers(window.get());

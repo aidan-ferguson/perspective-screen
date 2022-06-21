@@ -15,66 +15,84 @@ KinectSensor::KinectSensor()
 	}
 }
 
-void KinectSensor::GetColourFrame(byte* data)
-{
-	IColorFrame* frame = NULL;
-	if (colour_reader->AcquireLatestFrame(&frame) == S_OK) {
-		if (frame) {
-			frame->CopyConvertedFrameDataToArray(1080 * 1920 * 4, data, ColorImageFormat_Bgra);
-			frame->Release();
-		}
-		else {
-			std::cerr << "Could not acquire latest frame" << std::endl;
-		}
-	}
-}
-
-std::vector<Point> KinectSensor::GetDepthPoints() 
+// Returns true if points available, false if failure (some frame was not available)
+bool KinectSensor::GetDepthPoints(std::shared_ptr<float> points)
 {
 	// Need to release some objects in the real impl
+	// Or just return 
+	// Also check for HRESULT errors
+	IMultiSourceFrame* frame = nullptr;
+	reader->AcquireLatestFrame(&frame);
+	if (frame == nullptr) {
+		return false;
+	}
 
-	IMultiSourceFrame* frame = NULL;
-	while(frame == NULL)
-		reader->AcquireLatestFrame(&frame);
-
-	IDepthFrame* depthframe;
-	IDepthFrameReference* depthframeref = NULL;
+	IDepthFrame* depthframe = nullptr;
+	IDepthFrameReference* depthframeref = nullptr;
 	frame->get_DepthFrameReference(&depthframeref);
 	depthframeref->AcquireFrame(&depthframe);
-	if (depthframeref) depthframeref->Release();
+	if (depthframeref) {
+		depthframeref->Release();
+	}
+	if (depthframe == nullptr) {
+		frame->Release();
+		return false;
+	}
 
-	UINT sz;
-	UINT16* buf = new UINT16[512*424];
-	depthframe->AccessUnderlyingBuffer(&sz, &buf);
-
-	//mapper->MapDepthFrameToCameraSpace(512 * 424, buf, 512 * 424, depth2xyz);
-
-	//ColorSpacePoint* depth2rgb = new ColorSpacePoint[512 * 424];
-	//mapper->MapDepthFrameToColorSpace(512 * 424, buf, 512 * 424, depth2rgb);
-
-	CameraSpacePoint* depth2xyz = new CameraSpacePoint[1920 * 1080];
-	mapper->MapColorFrameToCameraSpace(512 * 424, buf, 1920 * 1080, depth2xyz);
+	UINT sz = 512*424;
+	std::shared_ptr<UINT16[]> buf(new UINT16[sz]);
+	depthframe->CopyFrameDataToArray(sz, buf.get());
 
 	if (depthframe) depthframe->Release();
 
-	IColorFrame* colorframe;
-	IColorFrameReference* frameref = NULL;
-	frame->get_ColorFrameReference(&frameref);
-	frameref->AcquireFrame(&colorframe);
-	if (frameref) frameref->Release();
-	unsigned char* rgbimage = new unsigned char[1080 * 1920 * 4];
-	colorframe->CopyConvertedFrameDataToArray(1080 * 1920 * 4, rgbimage, ColorImageFormat_Rgba);
 
-	std::vector<Point> points;
-
-
-	for (int i = 0; i < 1920*1080; i++) {
-		CameraSpacePoint camp = depth2xyz[i];
-		Point point(glm::vec3(camp.X, camp.Y, camp.Z), glm::vec3((float)rgbimage[4 * i + 0] / 255.0f, (float)rgbimage[4 * i + 1] / 255.0f, (float)rgbimage[4 * i + 2] / 255.0f));
-		points.push_back(point);
+	IColorFrame* colorframe = nullptr;
+	IColorFrameReference* colourframeref = nullptr;
+	frame->get_ColorFrameReference(&colourframeref);
+	colourframeref->AcquireFrame(&colorframe);
+	if (colourframeref) {
+		colourframeref->Release();
+	}
+	if (colorframe == nullptr) {
+		frame->Release();
+		return false;
 	}
 
-	return points;
+	std::shared_ptr<unsigned char[]> rgb_image(new unsigned char[1080 * 1920 * 4]);
+	colorframe->CopyConvertedFrameDataToArray(1080 * 1920 * 4, rgb_image.get(), ColorImageFormat_Rgba);
+
+	std::shared_ptr<CameraSpacePoint[]> camera_points(new CameraSpacePoint[512 * 424]);
+	mapper->MapDepthFrameToCameraSpace(512 * 424, buf.get(), 512 * 424, camera_points.get());
+
+	std::shared_ptr<ColorSpacePoint[]> colour_points(new ColorSpacePoint[512 * 424]);
+	mapper->MapCameraPointsToColorSpace(512*424, camera_points.get(), 512*424, colour_points.get());
+
+	for (int i = 0; i < 512*424; i++) {
+		float* point = &points.get()[i * 6];
+
+		point[0] = camera_points[i].X;
+		point[1] = camera_points[i].Y;
+		point[2] = camera_points[i].Z;
+
+		ColorSpacePoint col_point = colour_points[i];
+
+		if(col_point.X <= 1 || col_point.X >= 1920 || col_point.Y <= 1 || col_point.Y >= 1080){
+			point[3] = 0.83f;
+			point[4] = 0.06f;
+			point[5] = 0.35f;
+		}
+		else {
+			int x = (int)std::round(col_point.X) - 1;
+			int y = (int)std::round(col_point.Y) - 1;
+			point[3] = (float)rgb_image[4 * (x + y * 1920) + 0] / 255.0f;
+			point[4] = (float)rgb_image[4 * (x + y * 1920) + 1] / 255.0f;
+			point[5] = (float)rgb_image[4 * (x + y * 1920) + 2] / 255.0f;
+		}
+	}
+
+	colorframe->Release();
+	frame->Release();
+	return true;
 }
 
 KinectSensor::~KinectSensor() {

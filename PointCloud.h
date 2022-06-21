@@ -7,6 +7,7 @@
 
 struct Point {
 	Point(glm::vec3 _position, glm::vec3 _colour) : position(_position), colour(_colour) {}
+	Point() = default;
 
 	glm::vec3 position;
 	glm::vec3 colour;
@@ -15,8 +16,8 @@ struct Point {
 class PointCloud
 {
 public:
-	PointCloud(std::vector<Point> points);
-	void UpdatePoints(std::vector<Point> points);
+	PointCloud(std::shared_ptr<float> points, int n_points);
+	void UpdatePoints(std::shared_ptr<float> points);
 	void Draw();
 
 private:
@@ -24,5 +25,6 @@ private:
 	unsigned int VBO = 0;
 
 	int n_points = 0;
+	int arr_sz = 0;
 };
 

@@ -7,6 +7,7 @@
 
 // temp
 #include <vector>
+#include <iterator>
 #include "PointCloud.h"
 
 class KinectSensor {
@@ -14,8 +15,7 @@ public:
 	KinectSensor();
 	~KinectSensor();
 	
-	void GetColourFrame(byte* data);
-	std::vector<Point> GetDepthPoints();
+	bool GetDepthPoints(std::shared_ptr<float> points);
 
 private:
 	IKinectSensor* sensor = nullptr;

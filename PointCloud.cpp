@@ -1,8 +1,9 @@
 #include "PointCloud.h"
 
-PointCloud::PointCloud(std::vector<Point> points)
+PointCloud::PointCloud(std::shared_ptr<float> points, int n_pts)
 {
-	n_points = points.size();
+	n_points = 1920 * 1080;
+	arr_sz = n_points* sizeof(float)*6;
 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -10,23 +11,23 @@ PointCloud::PointCloud(std::vector<Point> points)
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(Point), points.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, arr_sz, points.get(), GL_DYNAMIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Point), (void*)offsetof(Point, position));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float) , (void*)offsetof(Point, position));
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Point), (void*)offsetof(Point, colour));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)offsetof(Point, colour));
 	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
 
-void PointCloud::UpdatePoints(std::vector<Point> points)
+void PointCloud::UpdatePoints(std::shared_ptr<float> points)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	void* vbo_buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	memcpy(vbo_buffer, points.data(), points.size() * sizeof(Point));
+	memcpy(vbo_buffer, points.get(), arr_sz);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 
