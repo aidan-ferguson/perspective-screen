@@ -8,7 +8,10 @@ KinectSensor::KinectSensor()
 	if (sensor) {
 		assert( sensor->Open() == S_OK );
 
-		sensor->OpenMultiSourceFrameReader(FrameSourceTypes::FrameSourceTypes_Depth | FrameSourceTypes::FrameSourceTypes_Color, &reader);
+		// TODO: induvidual frame readers? (as GetHeadPoint doesn't need depth or colour)
+		sensor->OpenMultiSourceFrameReader(FrameSourceTypes::FrameSourceTypes_Depth | 
+											FrameSourceTypes::FrameSourceTypes_Color |
+											FrameSourceTypes::FrameSourceTypes_Body, &reader);
 	}
 	else {
 		throw std::runtime_error("Kinect sensor was not retreived correctly");
@@ -40,9 +43,7 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 	UINT sz = 512*424;
 	std::shared_ptr<UINT16[]> buf(new UINT16[sz]);
 	depthframe->CopyFrameDataToArray(sz, buf.get());
-
-	if (depthframe) depthframe->Release();
-
+	depthframe->Release();
 
 	IColorFrame* colorframe = nullptr;
 	IColorFrameReference* colourframeref = nullptr;
@@ -58,6 +59,7 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 
 	std::shared_ptr<unsigned char[]> rgb_image(new unsigned char[1080 * 1920 * 4]);
 	colorframe->CopyConvertedFrameDataToArray(1080 * 1920 * 4, rgb_image.get(), ColorImageFormat_Rgba);
+	colorframe->Release();
 
 	std::shared_ptr<CameraSpacePoint[]> camera_points(new CameraSpacePoint[512 * 424]);
 	mapper->MapDepthFrameToCameraSpace(512 * 424, buf.get(), 512 * 424, camera_points.get());
@@ -88,7 +90,64 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 		}
 	}
 
-	colorframe->Release();
+	frame->Release();
+	return true;
+}
+
+bool KinectSensor::GetHeadPositions(std::shared_ptr<float> points)
+{
+	IMultiSourceFrame* frame = nullptr;
+	reader->AcquireLatestFrame(&frame);
+
+	if (frame == nullptr) {
+		return false;
+	}
+
+	IBody* bodies[BODY_COUNT] = {0};
+
+	IBodyFrame* bodyframe = nullptr;
+	IBodyFrameReference* bodyframeref = nullptr;
+	frame->get_BodyFrameReference(&bodyframeref);
+	bodyframeref->AcquireFrame(&bodyframe);
+	if (bodyframeref) {
+		bodyframeref->Release();
+	}
+	if (bodyframe == nullptr) {
+		frame->Release();
+		return false;
+	}
+	
+	bodyframe->GetAndRefreshBodyData(BODY_COUNT, bodies);
+
+	for (int i = 0; i < BODY_COUNT; ++i)
+	{
+		IBody* body = bodies[i];
+		if (body)
+		{
+			BOOLEAN bTracked = false;
+			body->get_IsTracked(&bTracked);
+
+			if (bTracked)
+			{
+				Joint joints[JointType_Count];
+
+				body->GetJoints(JointType_Count, joints);
+				CameraSpacePoint* head_pos = &joints[JointType_Head].Position;
+
+				float* point = &points.get()[i * 6];
+
+				point[0] = head_pos->X;
+				point[1] = head_pos->Y;
+				point[2] = head_pos->Z;
+
+				point[3] = 0.0f;
+				point[4] = 1.0f;
+				point[5] = 0.0f;
+			}
+		}
+	}
+
+	bodyframe->Release();
 	frame->Release();
 	return true;
 }

@@ -2,9 +2,9 @@
 
 PointCloud::PointCloud(std::shared_ptr<float> points, int n_pts, float sz_pts)
 {
-	sz_points = 1.0f;
-	n_points = 1920 * 1080;
-	sz_arr = n_points* sizeof(float)*6;
+	sz_points = sz_pts;
+	n_points = n_pts;
+	sz_arr = n_points * sizeof(float)*6;
 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);

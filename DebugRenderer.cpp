@@ -74,8 +74,11 @@ void DebugRenderer::MainLoop()
 {
 	// points take the following format:
 	//	each point has 6 floats: 3 for position and 3 for colour
-	std::shared_ptr<float> points(new float[1920*1080*6]);
-	PointCloud point_cloud(points, 1920*1080, 1.0f);
+	std::shared_ptr<float> depth_points(new float[512*424*6]);
+	PointCloud depth_point_cloud(depth_points, 512*424, 1.0f);
+
+	std::shared_ptr<float> head_points(new float[BODY_COUNT * 6]);
+	PointCloud head_point_cloud(head_points, BODY_COUNT * 6, 10.0f);
 
 	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
 
@@ -94,10 +97,15 @@ void DebugRenderer::MainLoop()
 		SetUniformMat4(point_cloud_shader, "view_matrix", camera.GetViewMatrix());
 		SetUniformMat4(point_cloud_shader, "model_matrix", glm::mat4(1.0f));
 
-		if (sensor.GetColourDepthPoints(points)) {
-			point_cloud.UpdatePoints(points);
+		if (sensor.GetColourDepthPoints(depth_points)) {
+			depth_point_cloud.UpdatePoints(depth_points);
 		}
-		point_cloud.Draw();
+		depth_point_cloud.Draw();
+
+		if (sensor.GetHeadPositions(head_points)) {
+			head_point_cloud.UpdatePoints(head_points);
+		}
+		head_point_cloud.Draw();
 
 		glfwSwapBuffers(window.get());
 		glfwPollEvents();
