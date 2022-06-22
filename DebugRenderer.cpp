@@ -78,8 +78,8 @@ void DebugRenderer::MainLoop()
 	std::shared_ptr<float> depth_points(new float[512*424*6]);
 	PointCloud depth_point_cloud(depth_points, 512*424, 1.0f);
 
-	std::shared_ptr<float> head_points(new float[BODY_COUNT * 6]);
-	PointCloud head_point_cloud(head_points, BODY_COUNT, 10.0f);
+	std::shared_ptr<float> eye_points(new float[BODY_COUNT * 6 * 2]);
+	PointCloud eye_point_cloud(eye_points, BODY_COUNT, 10.0f);
 
 	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
 
@@ -98,15 +98,16 @@ void DebugRenderer::MainLoop()
 		SetUniformMat4(point_cloud_shader, "view_matrix", camera.GetViewMatrix());
 		SetUniformMat4(point_cloud_shader, "model_matrix", glm::mat4(1.0f));
 
+		sensor.GetFrame();
 		if (sensor.GetColourDepthPoints(depth_points)) {
 			depth_point_cloud.UpdatePoints(depth_points);
 		}
 		depth_point_cloud.Draw();
 
-		if (sensor.GetEyePoints(head_points, depth_points)) {
-			head_point_cloud.UpdatePoints(head_points);
+		if (sensor.GetEyePoints(eye_points)) {
+			eye_point_cloud.UpdatePoints(eye_points);
 		}
-		head_point_cloud.Draw();
+		eye_point_cloud.Draw();
 
 		glfwSwapBuffers(window.get());
 		glfwPollEvents();
