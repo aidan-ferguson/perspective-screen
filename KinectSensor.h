@@ -15,7 +15,7 @@ public:
 	KinectSensor();
 	~KinectSensor();
 	
-	bool GetDepthPoints(std::shared_ptr<float> points);
+	bool GetColourDepthPoints(std::shared_ptr<float> points);
 
 private:
 	IKinectSensor* sensor = nullptr;

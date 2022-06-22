@@ -1,10 +1,10 @@
-#include "KinectRenderer.h"
+#include "DebugRenderer.h"
 
-KinectRenderer::KinectRenderer()
+DebugRenderer::DebugRenderer()
 {
 	glfwInit();
 
-	window = CreateKinectWindow("Kinect", 800, 600);
+	window = CreateKinectWindow("Kinect DebugRenderer", 800, 600);
 	glfwGetCursorPos(window.get(), &prev_mouse_x, &prev_mouse_y);
 
 	// Initliase GLAD so we have access to OpenGL functions
@@ -15,23 +15,22 @@ KinectRenderer::KinectRenderer()
 	
 }
 
-void KinectRenderer::OpenGLSetup()
+void DebugRenderer::OpenGLSetup()
 {
-	glPointSize(1.0f);
 	glEnable(GL_DEPTH_TEST);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.752f, 0.749f, 0.749f, 1.0f);
 }
 
-bool KinectRenderer::IsKeyPressed(int key_code) {
+bool DebugRenderer::IsKeyPressed(int key_code) {
 	return (glfwGetKey(window.get(), key_code) == GLFW_PRESS);
 }
 
-void KinectRenderer::GetMouseDelta(double& d_x, double& d_y)
+void DebugRenderer::GetMouseDelta(double& d_x, double& d_y)
 {
 	double mouse_x, mouse_y;
 	glfwGetCursorPos(window.get(), &mouse_x, &mouse_y);
@@ -45,7 +44,7 @@ void KinectRenderer::GetMouseDelta(double& d_x, double& d_y)
 	prev_mouse_y = mouse_y;
 }
 
-void KinectRenderer::HandleInput() {
+void DebugRenderer::HandleInput() {
 	if (IsKeyPressed(GLFW_KEY_W)) {
 		camera.position += camera.direction * camera.camera_speed * (float)frame_time;
 	}
@@ -71,12 +70,12 @@ void KinectRenderer::HandleInput() {
 	camera.UpdateDirection();
 }
 
-void KinectRenderer::MainLoop() 
+void DebugRenderer::MainLoop() 
 {
 	// points take the following format:
 	//	each point has 6 floats: 3 for position and 3 for colour
 	std::shared_ptr<float> points(new float[1920*1080*6]);
-	PointCloud point_cloud(points, 1920*1080);
+	PointCloud point_cloud(points, 1920*1080, 1.0f);
 
 	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
 
@@ -95,7 +94,7 @@ void KinectRenderer::MainLoop()
 		SetUniformMat4(point_cloud_shader, "view_matrix", camera.GetViewMatrix());
 		SetUniformMat4(point_cloud_shader, "model_matrix", glm::mat4(1.0f));
 
-		if (sensor.GetDepthPoints(points)) {
+		if (sensor.GetColourDepthPoints(points)) {
 			point_cloud.UpdatePoints(points);
 		}
 		point_cloud.Draw();

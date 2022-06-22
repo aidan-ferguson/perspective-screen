@@ -1,9 +1,9 @@
 #include <iostream>
 #include <Windows.h>
 
-#include "KinectRenderer.h"
+#include "DebugRenderer.h"
 
 int main() {
-	KinectRenderer renderer;
+	DebugRenderer renderer;
 	renderer.MainLoop();
 }

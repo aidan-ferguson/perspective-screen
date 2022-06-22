@@ -16,10 +16,8 @@ KinectSensor::KinectSensor()
 }
 
 // Returns true if points available, false if failure (some frame was not available)
-bool KinectSensor::GetDepthPoints(std::shared_ptr<float> points)
+bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 {
-	// Need to release some objects in the real impl
-	// Or just return 
 	// Also check for HRESULT errors
 	IMultiSourceFrame* frame = nullptr;
 	reader->AcquireLatestFrame(&frame);
@@ -82,8 +80,8 @@ bool KinectSensor::GetDepthPoints(std::shared_ptr<float> points)
 			point[5] = 0.35f;
 		}
 		else {
-			int x = (int)std::round(col_point.X) - 1;
-			int y = (int)std::round(col_point.Y) - 1;
+			int x = (int)col_point.X - 1;
+			int y = (int)col_point.Y - 1;
 			point[3] = (float)rgb_image[4 * (x + y * 1920) + 0] / 255.0f;
 			point[4] = (float)rgb_image[4 * (x + y * 1920) + 1] / 255.0f;
 			point[5] = (float)rgb_image[4 * (x + y * 1920) + 2] / 255.0f;

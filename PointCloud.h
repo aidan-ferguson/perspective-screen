@@ -16,7 +16,7 @@ struct Point {
 class PointCloud
 {
 public:
-	PointCloud(std::shared_ptr<float> points, int n_points);
+	PointCloud(std::shared_ptr<float> points, int n_pts, float sz_pts);
 	void UpdatePoints(std::shared_ptr<float> points);
 	void Draw();
 
@@ -25,6 +25,7 @@ private:
 	unsigned int VBO = 0;
 
 	int n_points = 0;
-	int arr_sz = 0;
+	int sz_arr = 0;
+	float sz_points = 0;
 };
 

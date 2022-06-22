@@ -56,6 +56,8 @@ std::string ReadShaderFile(std::string filename) {
 		std::cout << "Shader read file failed (" << filename << "): " << error.code() << std::endl;
 		assert(false);
 	}
+
+	return std::string("");
 }
 
 void CompileShader(int shader, std::string shader_code)

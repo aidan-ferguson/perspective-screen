@@ -11,9 +11,9 @@
 #include "PointCloud.h"
 #include "Camera.h"
 
-class KinectRenderer {
+class DebugRenderer {
 public:
-	KinectRenderer();
+	DebugRenderer();
 	void MainLoop();
 
 private:

@@ -24,7 +24,7 @@
     <ClCompile Include="KinectSensor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="KinectRenderer.cpp">
+    <ClCompile Include="DebugRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Window.cpp">
@@ -47,7 +47,7 @@
     <ClInclude Include="KinectSensor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KinectRenderer.h">
+    <ClInclude Include="DebugRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Window.h">

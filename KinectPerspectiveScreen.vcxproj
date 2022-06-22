@@ -149,7 +149,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="glad.c" />
-    <ClCompile Include="KinectRenderer.cpp" />
+    <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="KinectSensor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PointCloud.cpp" />
@@ -158,7 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="KinectRenderer.h" />
+    <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="KinectSensor.h" />
     <ClInclude Include="PointCloud.h" />
     <ClInclude Include="Shader.h" />
