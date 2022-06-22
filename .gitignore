@@ -407,3 +407,5 @@ FodyWeavers.xsd
 
 # Ignore glad.c
 glad.c
+/NuiDatabase
+*.dll

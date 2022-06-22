@@ -70,6 +70,7 @@ void DebugRenderer::HandleInput() {
 	camera.UpdateDirection();
 }
 
+// TODO: Clean up magic numbers, check on all HRESULT calls, ensure pointer managment
 void DebugRenderer::MainLoop() 
 {
 	// points take the following format:
@@ -78,7 +79,7 @@ void DebugRenderer::MainLoop()
 	PointCloud depth_point_cloud(depth_points, 512*424, 1.0f);
 
 	std::shared_ptr<float> head_points(new float[BODY_COUNT * 6]);
-	PointCloud head_point_cloud(head_points, BODY_COUNT * 6, 10.0f);
+	PointCloud head_point_cloud(head_points, BODY_COUNT, 10.0f);
 
 	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
 
@@ -102,7 +103,7 @@ void DebugRenderer::MainLoop()
 		}
 		depth_point_cloud.Draw();
 
-		if (sensor.GetHeadPositions(head_points)) {
+		if (sensor.GetEyePoints(head_points, depth_points)) {
 			head_point_cloud.UpdatePoints(head_points);
 		}
 		head_point_cloud.Draw();

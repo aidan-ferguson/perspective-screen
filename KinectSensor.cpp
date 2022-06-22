@@ -12,6 +12,16 @@ KinectSensor::KinectSensor()
 		sensor->OpenMultiSourceFrameReader(FrameSourceTypes::FrameSourceTypes_Depth | 
 											FrameSourceTypes::FrameSourceTypes_Color |
 											FrameSourceTypes::FrameSourceTypes_Body, &reader);
+
+		// Open sources and readers for the face tracking
+		for (int i = 0; i < BODY_COUNT; i++)
+		{
+			if (CreateFaceFrameSource(sensor, 0, FACE_FRAME_FEATURES, &face_frame_sources[i]) != S_OK) {
+				std::cout << "ensure that the NuiDatabase folder is located in the executable working dictory" << std::endl;
+				assert(false);
+			}
+			face_frame_sources[i]->OpenReader(&face_frame_readers[i]);
+		}
 	}
 	else {
 		throw std::runtime_error("Kinect sensor was not retreived correctly");
@@ -41,8 +51,8 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 	}
 
 	UINT sz = 512*424;
-	std::shared_ptr<UINT16[]> buf(new UINT16[sz]);
-	depthframe->CopyFrameDataToArray(sz, buf.get());
+	depth_buffer = std::shared_ptr<UINT16[]>(new UINT16[sz]);
+	depthframe->CopyFrameDataToArray(sz, depth_buffer.get());
 	depthframe->Release();
 
 	IColorFrame* colorframe = nullptr;
@@ -62,7 +72,7 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 	colorframe->Release();
 
 	std::shared_ptr<CameraSpacePoint[]> camera_points(new CameraSpacePoint[512 * 424]);
-	mapper->MapDepthFrameToCameraSpace(512 * 424, buf.get(), 512 * 424, camera_points.get());
+	mapper->MapDepthFrameToCameraSpace(512 * 424, depth_buffer.get(), 512 * 424, camera_points.get());
 
 	std::shared_ptr<ColorSpacePoint[]> colour_points(new ColorSpacePoint[512 * 424]);
 	mapper->MapCameraPointsToColorSpace(512*424, camera_points.get(), 512*424, colour_points.get());
@@ -94,7 +104,25 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 	return true;
 }
 
-bool KinectSensor::GetHeadPositions(std::shared_ptr<float> points)
+UINT16 KinectSensor::AverageDepth(int x, int y, int sample_size) {
+	std::unique_ptr<UINT16[]> depth_values(new UINT16[sample_size*sample_size]);
+
+	for (int x = 0; x < sample_size; x++) {
+		for (int y = 0; y < sample_size; y++) {
+			UINT16 depth_value = depth_buffer[(int)((x-(sample_size/2)) + (y-(sample_size/2)) * 424.0f)];
+			depth_values[x + y] = depth_value;
+		}
+	}
+
+	unsigned int sum = 0;
+	for (int i = 0; i < sample_size * sample_size; i++) {
+		sum += depth_values[i];
+	}
+
+	return (UINT16)(sum / (sample_size * sample_size));
+}
+
+bool KinectSensor::GetEyePoints(std::shared_ptr<float> points, std::shared_ptr<float> depth_points)
 {
 	IMultiSourceFrame* frame = nullptr;
 	reader->AcquireLatestFrame(&frame);
@@ -118,36 +146,85 @@ bool KinectSensor::GetHeadPositions(std::shared_ptr<float> points)
 	}
 	
 	bodyframe->GetAndRefreshBodyData(BODY_COUNT, bodies);
+	bodyframe->Release();
 
-	for (int i = 0; i < BODY_COUNT; ++i)
-	{
-		IBody* body = bodies[i];
-		if (body)
-		{
-			BOOLEAN bTracked = false;
-			body->get_IsTracked(&bTracked);
+	for (int face = 0; face < BODY_COUNT; ++face) {
+		IFaceFrame* pFaceFrame = nullptr;
+		if (face_frame_readers[face]->AcquireLatestFrame(&pFaceFrame) != S_OK) {
+			return false;
+		}
+		
+		BOOLEAN bFaceTracked = false;
+		if (pFaceFrame->get_IsTrackingIdValid(&bFaceTracked) != S_OK) {
+			return false;
+		}
 
-			if (bTracked)
+		if (bFaceTracked) {
+
+			IFaceFrameResult* pFaceFrameResult = nullptr;
+			pFaceFrame->get_FaceFrameResult(&pFaceFrameResult);
+
+			PointF facePoints[FacePointType::FacePointType_Count];
+			pFaceFrameResult->GetFacePointsInInfraredSpace(FacePointType::FacePointType_Count, facePoints);
+
+			PointF left_eye_infrared = facePoints[FacePointType::FacePointType_EyeLeft];
+			PointF right_eye_infrared = facePoints[FacePointType::FacePointType_EyeRight];
+
+			DepthSpacePoint left_eye_depth_point;
+			left_eye_depth_point.X = left_eye_infrared.X;
+			left_eye_depth_point.Y = left_eye_infrared.Y;
+
+			DepthSpacePoint right_eye_depth_point;
+			right_eye_depth_point.X = right_eye_infrared.X;
+			right_eye_depth_point.Y = right_eye_infrared.Y;
+
+			int average_x = (right_eye_depth_point.X + left_eye_depth_point.X) / 2;
+			int average_y = (right_eye_depth_point.Y + left_eye_depth_point.Y) / 2;
+			UINT16 depth_to_eyes = depth_buffer[average_x + average_y * 512];//AverageDepth(depth_point.X, depth_point.Y, 3);
+
+			CameraSpacePoint* camera_point = new CameraSpacePoint;
+			mapper->MapDepthPointToCameraSpace(left_eye_depth_point, depth_to_eyes, camera_point);
+
+			std::cout << average_x << ", " << average_y << ", " << depth_to_eyes << std::endl;
+
+			float* point = &points.get()[0];
+			point[0] = camera_point->X;
+			point[1] = camera_point->Y;
+			point[2] = camera_point->Z;
+
+			point[3] = 0.0f;
+			point[4] = 1.0f;
+			point[5] = 0.0f;
+
+			pFaceFrameResult->Release();
+			
+		}
+		else {
+			// Face tracking not valid, attempt to fix
+			IBody* pBody = bodies[face];
+			if (pBody != nullptr)
 			{
-				Joint joints[JointType_Count];
+				BOOLEAN bTracked = false;
+				pBody->get_IsTracked(&bTracked);
 
-				body->GetJoints(JointType_Count, joints);
-				CameraSpacePoint* head_pos = &joints[JointType_Head].Position;
-
-				float* point = &points.get()[i * 6];
-
-				point[0] = head_pos->X;
-				point[1] = head_pos->Y;
-				point[2] = head_pos->Z;
-
-				point[3] = 0.0f;
-				point[4] = 1.0f;
-				point[5] = 0.0f;
+				UINT64 bodyTId;
+				if (bTracked)
+				{
+					// get the tracking ID of this body
+					HRESULT hr = pBody->get_TrackingId(&bodyTId);
+					if (SUCCEEDED(hr))
+					{
+						// update the face frame source with the tracking ID
+						face_frame_sources[face]->put_TrackingId(bodyTId);
+					}
+				}
 			}
 		}
+
+		// TODO: FOR MORE FACES REMOVE BREAK
+		//break;
 	}
 
-	bodyframe->Release();
 	frame->Release();
 	return true;
 }

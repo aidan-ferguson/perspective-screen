@@ -2,9 +2,13 @@
 
 PointCloud::PointCloud(std::shared_ptr<float> points, int n_pts, float sz_pts)
 {
+	// Init point cloud to all 0
+	for (int i = 0; i < n_pts; i++) {
+		points.get()[i] = 0.0f;
+	}
 	sz_points = sz_pts;
 	n_points = n_pts;
-	sz_arr = n_points * sizeof(float)*6;
+	sz_arr = n_points * sizeof(float) * 6;
 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -14,6 +18,7 @@ PointCloud::PointCloud(std::shared_ptr<float> points, int n_pts, float sz_pts)
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sz_arr, points.get(), GL_DYNAMIC_DRAW);
 
+	// TODO: stop using offset of point, point is no longer used
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float) , (void*)offsetof(Point, position));
 	glEnableVertexAttribArray(0);
 
