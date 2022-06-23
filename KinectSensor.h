@@ -18,8 +18,13 @@ public:
 	~KinectSensor();
 	
 	bool GetColourDepthPoints(std::shared_ptr<float> points);
-	bool GetEyePoints(std::shared_ptr<float> points);
+	bool GetColouredEyePoints(std::shared_ptr<float> points);
+	bool UpdateFaceData();
+	int GetFirstNotableFaceIndex();
 	void GetFrame();
+
+	std::vector<std::shared_ptr<CameraSpacePoint>> eyes;
+	std::vector<Vector4> face_rotations;
 
 private:
 
@@ -47,7 +52,7 @@ private:
 	std::shared_ptr<unsigned char[]> rgb_buffer = nullptr;
 	std::vector<IBody*> bodies;
 
-	static const DWORD FACE_FRAME_FEATURES = FaceFrameFeatures::FaceFrameFeatures_PointsInInfraredSpace;
+	static const DWORD FACE_FRAME_FEATURES = FaceFrameFeatures::FaceFrameFeatures_PointsInInfraredSpace | FaceFrameFeatures::FaceFrameFeatures_RotationOrientation;
 
-
+	int tmp_face_index = -1;
 };

@@ -153,6 +153,8 @@
     <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="KinectSensor.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="PerspectiveRenderer.cpp" />
     <ClCompile Include="PointCloud.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -161,13 +163,17 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="KinectSensor.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="PerspectiveRenderer.h" />
     <ClInclude Include="PointCloud.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="FragmentShader.glsl" />
-    <None Include="VertexShader.glsl" />
+    <None Include="f_basic_mesh.glsl" />
+    <None Include="f_point_cloud.glsl" />
+    <None Include="v_basic_mesh.glsl" />
+    <None Include="v_point_cloud.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

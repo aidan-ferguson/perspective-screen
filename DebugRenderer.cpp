@@ -1,10 +1,12 @@
 #include "DebugRenderer.h"
 
-DebugRenderer::DebugRenderer()
+DebugRenderer::DebugRenderer(std::shared_ptr<KinectSensor> snsr)
 {
+	sensor = snsr;
+
 	glfwInit();
 
-	window = CreateKinectWindow("Kinect DebugRenderer", 800, 600);
+	window = CreateKinectWindow(window_name, 800, 600);
 	glfwGetCursorPos(window.get(), &prev_mouse_x, &prev_mouse_y);
 
 	// Initliase GLAD so we have access to OpenGL functions
@@ -81,7 +83,7 @@ void DebugRenderer::MainLoop()
 	std::shared_ptr<float> eye_points(new float[BODY_COUNT * 6 * 2]);
 	PointCloud eye_point_cloud(eye_points, BODY_COUNT, 10.0f);
 
-	int point_cloud_shader = CreateShaderFromFiles("VertexShader.glsl", "FragmentShader.glsl");
+	int point_cloud_shader = CreateShaderFromFiles("v_point_cloud.glsl", "f_point_cloud.glsl");
 
 	while (!glfwWindowShouldClose(window.get())) {
 		frame_time = glfwGetTime() - prev_frame_time;
@@ -98,13 +100,13 @@ void DebugRenderer::MainLoop()
 		SetUniformMat4(point_cloud_shader, "view_matrix", camera.GetViewMatrix());
 		SetUniformMat4(point_cloud_shader, "model_matrix", glm::mat4(1.0f));
 
-		sensor.GetFrame();
-		if (sensor.GetColourDepthPoints(depth_points)) {
+		sensor->GetFrame();
+		if (sensor->GetColourDepthPoints(depth_points)) {
 			depth_point_cloud.UpdatePoints(depth_points);
 		}
 		depth_point_cloud.Draw();
 
-		if (sensor.GetEyePoints(eye_points)) {
+		if (sensor->GetColouredEyePoints(eye_points)) {
 			eye_point_cloud.UpdatePoints(eye_points);
 		}
 		eye_point_cloud.Draw();

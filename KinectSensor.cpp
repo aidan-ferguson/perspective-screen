@@ -16,7 +16,12 @@ KinectSensor::KinectSensor()
 		// Open sources and readers for the face tracking
 		for (int i = 0; i < BODY_COUNT; i++)
 		{
+			// Init the vector arrays to the correct size
 			bodies.push_back(nullptr);
+			eyes.push_back(nullptr);
+			eyes.push_back(nullptr);
+			face_rotations.push_back(Vector4());
+
 			if (CreateFaceFrameSource(sensor, 0, FACE_FRAME_FEATURES, &face_frame_sources[i]) != S_OK) {
 				std::cout << "ensure that the NuiDatabase folder is located in the executable working dictory" << std::endl;
 				assert(false);
@@ -161,13 +166,12 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 }
 
 /// <summary>
-/// Populates an array with the positions (and static colour) of the eyes of a person
+/// Updates the 3d positions of every tracked eye
 /// </summary>
-/// <param name="points">Pointer to start of array which holds points for eye tracking visualisation</param>
-/// <returns>true on eye point update</returns>
-bool KinectSensor::GetEyePoints(std::shared_ptr<float> points)
+/// <returns>true on update success</returns>
+bool KinectSensor::UpdateFaceData()
 {
-	if (!UpdateBodyData()) {
+	if (!UpdateBodyData() || !UpdateDepthBuffer()) {
 		return false;
 	}
 
@@ -176,17 +180,20 @@ bool KinectSensor::GetEyePoints(std::shared_ptr<float> points)
 		if (face_frame_readers[face]->AcquireLatestFrame(&face_frame) != S_OK) {
 			return false;
 		}
-		
+
 		BOOLEAN is_face_tracked = false;
 		if (face_frame->get_IsTrackingIdValid(&is_face_tracked) != S_OK) {
 			return false;
 		}
 
 		if (is_face_tracked) {
-			// We have a face tracked, get the camera space coordinates and add them to the point list
+			// We have a face tracked, get the face properties and update the vector lists
+			tmp_face_index = face;
 
 			IFaceFrameResult* face_frame_result = nullptr;
 			face_frame->get_FaceFrameResult(&face_frame_result);
+
+			face_frame_result->get_FaceRotationQuaternion(&face_rotations[face]);
 
 			PointF face_points[FacePointType::FacePointType_Count];
 			face_frame_result->GetFacePointsInInfraredSpace(FacePointType::FacePointType_Count, face_points);
@@ -204,16 +211,13 @@ bool KinectSensor::GetEyePoints(std::shared_ptr<float> points)
 			int average_y = (int)((right_eye_depth_point.Y + left_eye_depth_point.Y) / 2.0f);
 			UINT16 depth_to_eyes = depth_buffer[average_x + average_y * w_depth];
 
-			CameraSpacePoint* left_eye_point = new CameraSpacePoint;
-			mapper->MapDepthPointToCameraSpace(left_eye_depth_point, depth_to_eyes, left_eye_point);
-			CameraSpacePoint* right_eye_point = new CameraSpacePoint;
-			mapper->MapDepthPointToCameraSpace(right_eye_depth_point, depth_to_eyes, right_eye_point);
-
-			float* eye_pair = &points.get()[0];
-			memcpy(&eye_pair[0], left_eye_point, sizeof(CameraSpacePoint));
-			memcpy(&eye_pair[3], eye_colour, 3 * sizeof(float));
-			memcpy(&eye_pair[6], right_eye_point, sizeof(CameraSpacePoint));
-			memcpy(&eye_pair[9], eye_colour, 3 * sizeof(float));
+			std::shared_ptr<CameraSpacePoint> left_eye_point(new CameraSpacePoint);
+			mapper->MapDepthPointToCameraSpace(left_eye_depth_point, depth_to_eyes, left_eye_point.get());
+			std::shared_ptr<CameraSpacePoint> right_eye_point(new CameraSpacePoint);
+			mapper->MapDepthPointToCameraSpace(right_eye_depth_point, depth_to_eyes, right_eye_point.get());
+			
+			eyes[face + 0] = left_eye_point;
+			eyes[face + 1] = right_eye_point;
 
 			face_frame_result->Release();
 		}
@@ -234,6 +238,33 @@ bool KinectSensor::GetEyePoints(std::shared_ptr<float> points)
 	}
 
 	return true;
+}
+
+/// <summary>
+/// Populates an array with the positions (and some static colour) of the eyes of a person
+/// </summary>
+/// <param name="points">Pointer to start of array which holds points for eye tracking visualisation</param>
+/// <returns>true on eye point update</returns>
+bool KinectSensor::GetColouredEyePoints(std::shared_ptr<float> points)
+{
+	if (!UpdateFaceData()) {
+		return false;
+	}
+	
+	for (int i = 0; i < eyes.size(); i++) {
+		if (eyes[i].get() != nullptr) {
+			float* eye_point = &points.get()[i * 6];
+			memcpy(&eye_point[0], eyes[i].get(), sizeof(CameraSpacePoint));
+			memcpy(&eye_point[3], eye_colour, 3 * sizeof(float));
+		}
+	}
+
+	return true;
+}
+
+int KinectSensor::GetFirstNotableFaceIndex()
+{
+	return tmp_face_index;
 }
 
 KinectSensor::~KinectSensor() {

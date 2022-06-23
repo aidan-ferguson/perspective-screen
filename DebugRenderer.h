@@ -14,13 +14,13 @@
 
 class DebugRenderer {
 public:
-	DebugRenderer();
+	DebugRenderer(std::shared_ptr<KinectSensor> snsr);
 	void MainLoop();
 
 private:
-	KinectSensor sensor;
+	std::shared_ptr<KinectSensor> sensor;
 
-	std::string window_name = std::string("Kinect");
+	std::string window_name = std::string("Kinect Debug Renderer");
 
 	std::shared_ptr<GLFWwindow> window = nullptr;
 	Camera camera;

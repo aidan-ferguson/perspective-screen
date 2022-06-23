@@ -19,10 +19,10 @@ PointCloud::PointCloud(std::shared_ptr<float> points, int n_pts, float sz_pts)
 	glBufferData(GL_ARRAY_BUFFER, sz_arr, points.get(), GL_DYNAMIC_DRAW);
 
 	// TODO: stop using offset of point, point is no longer used
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float) , (void*)offsetof(Point, position));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float) , (void*)(0 * sizeof(float)));
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)offsetof(Point, colour));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);

@@ -42,6 +42,12 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PerspectiveRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KinectSensor.h">
@@ -62,12 +68,24 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PerspectiveRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="FragmentShader.glsl">
+    <None Include="f_point_cloud.glsl">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="VertexShader.glsl">
+    <None Include="v_point_cloud.glsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="v_basic_mesh.glsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="f_basic_mesh.glsl">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>
