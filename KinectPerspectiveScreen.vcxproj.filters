@@ -88,5 +88,11 @@
     <None Include="f_basic_mesh.glsl">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="v_screen_quad.glsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="f_screen_quad.glsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -172,8 +172,10 @@
   <ItemGroup>
     <None Include="f_basic_mesh.glsl" />
     <None Include="f_point_cloud.glsl" />
+    <None Include="f_screen_quad.glsl" />
     <None Include="v_basic_mesh.glsl" />
     <None Include="v_point_cloud.glsl" />
+    <None Include="v_screen_quad.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
