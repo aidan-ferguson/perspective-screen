@@ -19,35 +19,36 @@
 
 class DebugRenderer {
 public:
-	DebugRenderer(std::shared_ptr<KinectSensor> snsr, std::shared_ptr<PerspectiveRenderer> p_renderer);
+	DebugRenderer(std::shared_ptr<KinectSensor> snsr);
 	void MainLoop();
 
 private:
-	std::shared_ptr<KinectSensor> sensor = nullptr;
-	std::shared_ptr<PerspectiveRenderer> perspective_renderer = nullptr;
-
-	std::string window_name = std::string("Kinect Debug Renderer");
-
-	std::shared_ptr<GLFWwindow> window = nullptr;
-	Camera camera;
-
-	double frame_time = 0, prev_frame_time = 0;
-	double prev_mouse_x = 0, prev_mouse_y = 0;
-	ImVec2 prev_render_window_sz;
-	bool render_window_focused = false;
-
-	ImGuiIO* imgui_io = nullptr;
-
 	void OpenGLSetup();
 	void HandleInput();
 	bool IsKeyPressed(int key_code);
 	void GetMouseDelta(double& d_x, double& d_y);
 	void CreateFramebuffer();
 
+	std::shared_ptr<KinectSensor> sensor = nullptr;
+	std::shared_ptr<PerspectiveRenderer> perspective_renderer = nullptr;
+
+	std::string window_name = std::string("Kinect Debug Renderer");
+
+	std::shared_ptr<GLFWwindow> window = nullptr;
+	bool program_should_close = false;
+	Camera camera;
+
+	double frame_time = 0, prev_frame_time = 0;
+	double prev_mouse_x = 0, prev_mouse_y = 0;
+	ImVec2 prev_debug_render_window_sz = ImVec2(1,1), prev_perspective_render_window_sz = ImVec2(1, 1);
+	bool render_window_focused = false;
+
+	ImGuiIO* imgui_io = nullptr;
+
 	// temp
 	GLuint fb_id;
 	GLuint fb_texture_id;
 	GLuint depth_buffer;
 
-	glm::vec3 kinect_dimensions = glm::vec3(0.249f, 0.045f, 0.067f);
+	const glm::vec3 kinect_dimensions = glm::vec3(0.249f, 0.045f, 0.067f);
 };

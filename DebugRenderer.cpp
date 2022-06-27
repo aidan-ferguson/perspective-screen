@@ -1,21 +1,25 @@
 #include "DebugRenderer.h"
 
-DebugRenderer::DebugRenderer(std::shared_ptr<KinectSensor> snsr, std::shared_ptr<PerspectiveRenderer> p_renderer)
+DebugRenderer::DebugRenderer(std::shared_ptr<KinectSensor> snsr)
 {
 	sensor = snsr;
-	perspective_renderer = p_renderer;
-
 	glfwInit();
 
-	window = CreateKinectWindow(window_name, 1500, 600, false);
+	// TODO: get physical of the monitors attached and make screen that size automatically using glfwGetMonitorPhysicalSize()
+	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+	window = CreateKinectWindow(window_name, mode->width, mode->height, false);
+	glfwSetWindowPos(window.get(), 0, 0);
 	glfwGetCursorPos(window.get(), &prev_mouse_x, &prev_mouse_y);
 	glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	glfwSetInputMode(window.get(), GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE); // for accurate mouse polling https://www.glfw.org/docs/3.3/input_guide.html#input_mouse_button
 
 	// Initliase GLAD so we have access to OpenGL functions
 	assert(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) != 0);
-
 	OpenGLSetup();
+
+	// Initalise the perspective renderer
+	perspective_renderer = std::shared_ptr<PerspectiveRenderer>(new PerspectiveRenderer(sensor));
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -28,7 +32,11 @@ DebugRenderer::DebugRenderer(std::shared_ptr<KinectSensor> snsr, std::shared_ptr
 	ImGui_ImplGlfw_InitForOpenGL(window.get(), true);
 	ImGui_ImplOpenGL3_Init(nullptr);
 	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
+	ImGui::StyleColorsClassic();
+
+	camera.position = glm::vec3(-2.0f, 0.5, 1.0f);
+	camera.yaw = 0.0f;
+	camera.pitch = -5.0f;
 }
 
 void DebugRenderer::OpenGLSetup()
@@ -187,24 +195,23 @@ void DebugRenderer::MainLoop()
 	glm::vec3 kinect_sensor_position = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	Mesh screen_quad_mesh(vertices, 4, indices, 6, GL_STATIC_DRAW);
-	glm::vec3 world_screen_position = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::vec3 world_screen_position = glm::vec3(0.0f, 0.0f, -0.5f);
 	glm::vec3 world_screen_scale = glm::vec3(1.0f, 1.0f, 0.1f);
 
-	while (!glfwWindowShouldClose(window.get())) {
+	while (!(glfwWindowShouldClose(window.get()) || program_should_close)) {
 		frame_time = glfwGetTime() - prev_frame_time;
 		prev_frame_time = glfwGetTime();
-		
+
 		HandleInput();
 
-		int width, height;
-		glfwGetWindowSize(window.get(), &width, &height);
 
+		glViewport(0, 0, prev_debug_render_window_sz.x, prev_debug_render_window_sz.y);
 		glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
+
 		glUseProgram(point_cloud_shader);
-		SetUniformMat4(point_cloud_shader, "projection_matrix", camera.GetProjectionMatrix(width, height));
+		SetUniformMat4(point_cloud_shader, "projection_matrix", camera.GetProjectionMatrix(prev_debug_render_window_sz.x, prev_debug_render_window_sz.y));
 		SetUniformMat4(point_cloud_shader, "view_matrix", camera.GetViewMatrix());
 		SetUniformMat4(point_cloud_shader, "model_matrix", glm::mat4(1.0f));
 
@@ -226,7 +233,7 @@ void DebugRenderer::MainLoop()
 		}
 
 		glUseProgram(basic_mesh_shader);
-		SetUniformMat4(basic_mesh_shader, "projection_matrix", camera.GetProjectionMatrix(width, height));
+		SetUniformMat4(basic_mesh_shader, "projection_matrix", camera.GetProjectionMatrix(prev_debug_render_window_sz.x, prev_debug_render_window_sz.y));
 		SetUniformMat4(basic_mesh_shader, "view_matrix", camera.GetViewMatrix());
 
 		glm::mat4 kinect_model_matrix = glm::mat4(1.0f);
@@ -238,47 +245,74 @@ void DebugRenderer::MainLoop()
 		glm::mat4 world_screen_matrix = glm::mat4(1.0f);
 		world_screen_matrix = glm::translate(world_screen_matrix, world_screen_position);
 		world_screen_matrix = glm::scale(world_screen_matrix, world_screen_scale);
+		perspective_renderer->SetScreenModelMatrix(world_screen_matrix);
 		SetUniformMat4(basic_mesh_shader, "model_matrix", world_screen_matrix);
 		kinect_mesh.Draw();
+
+		// Draw the perspective view into a framebuffer
+		glViewport(0, 0, prev_perspective_render_window_sz.x, prev_perspective_render_window_sz.y);
+		perspective_renderer->DrawFrame();
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		//ImGui::ShowDemoWindow();
+		if (ImGui::BeginMainMenuBar()) {
+			if (ImGui::BeginMenu("File")) {
+				ImGui::MenuItem("Exit", "ALT+F4", &program_should_close);
+				ImGui::Separator();
+				ImGui::EndMenu();
+			}
+			ImGui::EndMainMenuBar();
+		}
 		ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ImGui::Begin("test window");
+		{
+			ImGui::Begin("test window");
+			render_window_focused = false; // innocent until proven guilty
+			// Check mouse click held and that window is focused
+			if (glfwGetMouseButton(window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && ImGui::IsWindowFocused()) {
+				render_window_focused = true;
+			}
 
-		render_window_focused = false; // innocent until proven guilty
-		// Check mouse click held and that window is focused
-		if (glfwGetMouseButton(window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && ImGui::IsWindowFocused()) {
-			render_window_focused = true;
+			ImVec2 window_size = ImGui::GetWindowSize();
+			if (window_size.x != prev_debug_render_window_sz.x || window_size.y != prev_debug_render_window_sz.y) {
+				glViewport(0, 0, window_size.x, window_size.y);
+				glBindTexture(GL_TEXTURE_2D, fb_texture_id);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_size.x, window_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+				glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
+				glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_size.x, window_size.y);
+			}
+			ImGui::Image((void*)(intptr_t)fb_texture_id, ImVec2(window_size.x, window_size.y), ImVec2(0, 1), ImVec2(1, 0));
+			prev_debug_render_window_sz = window_size;
+			ImGui::End();
 		}
 
-		ImVec2 window_size = ImGui::GetWindowSize();
- 		if (window_size.x != prev_render_window_sz.x || window_size.y != prev_render_window_sz.y) {
-			glViewport(0, 0, window_size.x, window_size.y);
-			glBindTexture(GL_TEXTURE_2D, fb_texture_id);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_size.x, window_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_size.x, window_size.y);
+		{
+			ImGui::Begin("Perspective View");
+			ImVec2 window_size = ImGui::GetWindowSize();
+			if (window_size.x != prev_debug_render_window_sz.x || window_size.y != prev_debug_render_window_sz.y) {
+				perspective_renderer->Resize(window_size.x, window_size.y);
+			}
+			ImGui::Image((void*)(intptr_t)perspective_renderer->GetFrameBufferTexture(), ImVec2(window_size.x, window_size.y), ImVec2(0, 1), ImVec2(1, 0));
+			prev_perspective_render_window_sz = window_size;
+			ImGui::End();
 		}
-		ImGui::Image((void*)(intptr_t)fb_texture_id, ImVec2(window_size.x, window_size.y), ImVec2(0,1), ImVec2(1,0));
-		prev_render_window_sz = ImGui::GetWindowSize();
-		ImGui::End();
 
-		ImGui::Begin("Demo window");
-		ImGui::Checkbox("Render point cloud", &show_point_cloud);
-		ImGui::Checkbox("Render eye points", &show_eye_points);
-		ImGui::DragFloat("Screen position X", &world_screen_position.x, 0.005f);
-		ImGui::DragFloat("Screen position Y", &world_screen_position.y, 0.005f);
-		ImGui::DragFloat("Screen position Z", &world_screen_position.z, 0.005f);
-		ImGui::DragFloat("Screen width", &world_screen_scale.x, 0.005f);
-		ImGui::DragFloat("Screen height", &world_screen_scale.y, 0.005f);
-		ImGui::End();
+		{
+			ImGui::Begin("Demo window");
+			ImGui::Checkbox("Render point cloud", &show_point_cloud);
+			ImGui::Checkbox("Render eye points", &show_eye_points);
+			ImGui::DragFloat("Screen position X", &world_screen_position.x, 0.005f);
+			ImGui::DragFloat("Screen position Y", &world_screen_position.y, 0.005f);
+			ImGui::DragFloat("Screen position Z", &world_screen_position.z, 0.005f);
+			ImGui::DragFloat("Screen width", &world_screen_scale.x, 0.005f);
+			ImGui::DragFloat("Screen height", &world_screen_scale.y, 0.005f);
+			ImGui::End();
+		}
 
 		// Render dear imgui into screen
 		ImGui::Render();
@@ -293,11 +327,6 @@ void DebugRenderer::MainLoop()
 
 		glfwSwapBuffers(window.get());
 		glfwPollEvents();
-
-		// Finally draw the perspective view
-		if (perspective_renderer != nullptr) {
-			perspective_renderer->DrawFrame();
-		}
 	}
 
 	glfwTerminate();

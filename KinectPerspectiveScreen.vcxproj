@@ -178,6 +178,7 @@
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="imgui.ini" />
     <None Include="shaders\f_basic_mesh.glsl" />
     <None Include="shaders\f_point_cloud.glsl" />
     <None Include="shaders\f_screen_quad.glsl" />

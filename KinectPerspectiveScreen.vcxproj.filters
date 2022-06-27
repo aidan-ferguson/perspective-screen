@@ -121,5 +121,8 @@
     <None Include="shaders\v_screen_quad.glsl">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="imgui.ini">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
