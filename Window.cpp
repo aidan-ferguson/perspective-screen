@@ -9,7 +9,7 @@ void WindowSizeChangeCallback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-std::shared_ptr<GLFWwindow> CreateKinectWindow(std::string window_name, int width, int height)
+std::shared_ptr<GLFWwindow> CreateKinectWindow(std::string window_name, int width, int height, bool default_resize_callback)
 {
 	// Define the window
 	std::shared_ptr<GLFWwindow> window(glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL), &DestroyKinectWindow);
@@ -17,7 +17,9 @@ std::shared_ptr<GLFWwindow> CreateKinectWindow(std::string window_name, int widt
 
 	// Assign the OpenGL context to the window
 	glfwMakeContextCurrent(window.get());
-	glfwSetFramebufferSizeCallback(window.get(), WindowSizeChangeCallback);
+	if (default_resize_callback) {
+		glfwSetFramebufferSizeCallback(window.get(), WindowSizeChangeCallback);
+	}
 
 	// Capture mouse 
 	glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);

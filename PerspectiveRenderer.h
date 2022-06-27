@@ -18,11 +18,10 @@ class PerspectiveRenderer
 {
 public:
 	PerspectiveRenderer(std::shared_ptr<KinectSensor> snsr);
-	void MainLoop();
+	void DrawFrame();
 
 private:
 	void OpenGLSetup();
-	void HandleInput();
 	bool IsKeyPressed(int key_code);
 	void GetMouseDelta(double& d_x, double& d_y);
 	void CreateFramebuffer();
@@ -48,5 +47,24 @@ private:
 
 	GLuint fb_id;
 	GLuint fb_texture_id;
+
+	int basic_mesh_shader;
+	Mesh mesh;
+
+	Vertex screen_quad_vertices[4] = {
+		glm::vec3(-1.0f, 1.0f, 0.0f), glm::vec2(0, 1), glm::vec3(0, 0, 1),
+		glm::vec3(1.0f, 1.0f, 0.0f), glm::vec2(1, 1), glm::vec3(0, 0, 1),
+		glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0, 0), glm::vec3(0, 0, 1),
+		glm::vec3(1.0f, -1.0f, 0.0f), glm::vec2(1, 0), glm::vec3(0, 0, 1),
+	};
+	unsigned int screen_quad_indices[6] = {
+		0, 1, 2,
+		1, 2, 3,
+	};
+
+	int screen_quad_shader;
+	Mesh screen_quad_mesh;
+
+	std::shared_ptr<CameraSpacePoint> eye_pos = nullptr;
 };
 

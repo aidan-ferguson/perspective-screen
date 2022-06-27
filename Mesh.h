@@ -12,6 +12,7 @@ struct Vertex {
 class Mesh
 {
 public:
+	Mesh() = default;
 	Mesh(Vertex* vertices, int _n_vertices, unsigned int* indices, int n_indices, GLenum usage);
 	void Update(Vertex* vertices);
 	void Draw();

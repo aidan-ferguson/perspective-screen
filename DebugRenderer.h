@@ -1,24 +1,30 @@
 #pragma once
 
 #include <Windows.h>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <string>
 
 #include "KinectSensor.h"
+#include "PerspectiveRenderer.h"
 #include "Window.h"
 #include "Shader.h"
 #include "PointCloud.h"
 #include "Camera.h"
 
+
 class DebugRenderer {
 public:
-	DebugRenderer(std::shared_ptr<KinectSensor> snsr);
+	DebugRenderer(std::shared_ptr<KinectSensor> snsr, std::shared_ptr<PerspectiveRenderer> p_renderer);
 	void MainLoop();
 
 private:
-	std::shared_ptr<KinectSensor> sensor;
+	std::shared_ptr<KinectSensor> sensor = nullptr;
+	std::shared_ptr<PerspectiveRenderer> perspective_renderer = nullptr;
 
 	std::string window_name = std::string("Kinect Debug Renderer");
 
@@ -27,9 +33,21 @@ private:
 
 	double frame_time = 0, prev_frame_time = 0;
 	double prev_mouse_x = 0, prev_mouse_y = 0;
+	ImVec2 prev_render_window_sz;
+	bool render_window_focused = false;
+
+	ImGuiIO* imgui_io = nullptr;
 
 	void OpenGLSetup();
 	void HandleInput();
 	bool IsKeyPressed(int key_code);
 	void GetMouseDelta(double& d_x, double& d_y);
+	void CreateFramebuffer();
+
+	// temp
+	GLuint fb_id;
+	GLuint fb_texture_id;
+	GLuint depth_buffer;
+
+	glm::vec3 kinect_dimensions = glm::vec3(0.249f, 0.045f, 0.067f);
 };
