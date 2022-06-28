@@ -12,6 +12,11 @@
 
 #define ASSERT_HRESULT(hr) if(hr != S_OK){ std::cout << "HRESULT error: " << std::hex << hr << std::dec << std::endl; assert(false);}
 
+struct FaceInformation {
+	unsigned int id;
+	unsigned char* face_texture;
+};
+
 class KinectSensor {
 public:
 	KinectSensor();
@@ -19,8 +24,9 @@ public:
 	
 	bool GetColourDepthPoints(std::shared_ptr<float> points);
 	bool GetColouredEyePoints(std::shared_ptr<float> points);
+	std::array<bool, BODY_COUNT> GetAvailableFaces();
+	std::vector<std::shared_ptr<CameraSpacePoint>> GetEyePositions(unsigned int face_id);
 	bool UpdateFaceData();
-	int GetFirstNotableFaceIndex();
 	void GetFrame();
 
 	std::vector<std::shared_ptr<CameraSpacePoint>> eyes;
@@ -51,8 +57,7 @@ private:
 	std::shared_ptr<UINT16[]> depth_buffer = nullptr;
 	std::shared_ptr<unsigned char[]> rgb_buffer = nullptr;
 	std::vector<IBody*> bodies;
+	std::array<bool, BODY_COUNT> available_faces = {0};
 
 	static const DWORD FACE_FRAME_FEATURES = FaceFrameFeatures::FaceFrameFeatures_PointsInInfraredSpace | FaceFrameFeatures::FaceFrameFeatures_RotationOrientation;
-
-	int tmp_face_index = -1;
 };

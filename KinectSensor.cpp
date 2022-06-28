@@ -175,7 +175,7 @@ bool KinectSensor::UpdateFaceData()
 		return false;
 	}
 
-	for (int face = 0; face < BODY_COUNT; ++face) {
+	for (int face = 0; face < BODY_COUNT; face++) {
 		IFaceFrame* face_frame = nullptr;
 		if (face_frame_readers[face]->AcquireLatestFrame(&face_frame) != S_OK) {
 			return false;
@@ -188,7 +188,7 @@ bool KinectSensor::UpdateFaceData()
 
 		if (is_face_tracked) {
 			// We have a face tracked, get the face properties and update the vector lists
-			tmp_face_index = face;
+			available_faces[face] = true;
 
 			IFaceFrameResult* face_frame_result = nullptr;
 			face_frame->get_FaceFrameResult(&face_frame_result);
@@ -223,6 +223,7 @@ bool KinectSensor::UpdateFaceData()
 		}
 		else {
 			// Face tracking not valid, attempt to by checking if body is tracked then informing the face frame source
+			available_faces[face] = false;
 			IBody* body = bodies[face];
 			if (body != nullptr) {
 				BOOLEAN is_body_tracked = false;
@@ -247,9 +248,9 @@ bool KinectSensor::UpdateFaceData()
 /// <returns>true on eye point update</returns>
 bool KinectSensor::GetColouredEyePoints(std::shared_ptr<float> points)
 {
-	if (!UpdateFaceData()) {
+	/*if (!UpdateFaceData()) {
 		return false;
-	}
+	}*/
 	
 	for (int i = 0; i < eyes.size(); i++) {
 		if (eyes[i].get() != nullptr) {
@@ -262,9 +263,17 @@ bool KinectSensor::GetColouredEyePoints(std::shared_ptr<float> points)
 	return true;
 }
 
-int KinectSensor::GetFirstNotableFaceIndex()
+std::array<bool, BODY_COUNT> KinectSensor::GetAvailableFaces()
 {
-	return tmp_face_index;
+	return available_faces;
+}
+
+std::vector<std::shared_ptr<CameraSpacePoint>> KinectSensor::GetEyePositions(unsigned int face_id)
+{
+	std::vector<std::shared_ptr<CameraSpacePoint>> points;
+	points.push_back(eyes[face_id + 0]);
+	points.push_back(eyes[face_id + 1]);
+	return points;
 }
 
 KinectSensor::~KinectSensor() {

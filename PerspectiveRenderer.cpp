@@ -101,9 +101,9 @@ glm::vec2 PerspectiveRenderer::WorldToScreenSpace(glm::mat4 model_matrix, glm::v
 
 void PerspectiveRenderer::DrawFrame()
 {
-	sensor->GetFrame();
-	sensor->UpdateFaceData();
-	int face_index = sensor->GetFirstNotableFaceIndex();
+	//sensor->GetFrame();
+	//sensor->UpdateFaceData();
+	/*int face_index = sensor->GetFirstNotableFaceIndex();
 	if (face_index >= 0) {
 		eye_pos = sensor->eyes[face_index * 2];
 		Vector4 rotation = sensor->face_rotations[face_index];
@@ -112,7 +112,7 @@ void PerspectiveRenderer::DrawFrame()
 			camera.position = glm::vec3(eye_pos->X, eye_pos->Y, eye_pos->Z);
 			camera.UpdateDirection();
 		}
-	}
+	}*/
 
 	// Draw scene to framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, world_fb);

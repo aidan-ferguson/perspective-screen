@@ -190,6 +190,7 @@ void DebugRenderer::MainLoop()
 
 		if (sensor != nullptr) {
 			sensor->GetFrame();
+			sensor->UpdateFaceData();
 			if (show_point_cloud) {
 				if (sensor->GetColourDepthPoints(depth_points)) {
 					depth_point_cloud.UpdatePoints(depth_points);
@@ -273,7 +274,7 @@ void DebugRenderer::MainLoop()
 
 		{
 			ImGui::Begin("Debug tools");
-			if (ImGui::TreeNode("Render options")) {
+			if (ImGui::TreeNode("General options")) {
 				ImGui::Checkbox("Render point cloud", &show_point_cloud);
 				ImGui::Checkbox("Render eye points", &show_eye_points);
 				ImGui::Separator();
@@ -283,6 +284,11 @@ void DebugRenderer::MainLoop()
 					world_screen.scale.x = monitor_phys_size.x;
 					world_screen.scale.y = monitor_phys_size.y;
 					current_selected_monitor = -1;
+				}
+				ImGui::Separator();
+				for (bool face_available : sensor->GetAvailableFaces()) {
+					const char* text = face_available ? "1" : "0";
+					ImGui::Text(text);
 				}
 				ImGui::TreePop();
 			}
