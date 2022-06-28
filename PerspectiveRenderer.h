@@ -13,6 +13,8 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Mesh.h"
+#include "Primitives.h"
+#include "SceneObject.h"
 
 class PerspectiveRenderer
 {
@@ -22,19 +24,21 @@ public:
 	void DrawFrame();
 	void Resize(float x, float y);
 	void SetScreenModelMatrix(glm::mat4 model_matrix);
+	void SetSceneObjects(std::vector<SceneObject*> scene_objects);
 
 private:
 	void CreateFramebuffer(GLuint& fb_id, GLuint& fb_texture_id, GLuint& depth_texture_id);
 	glm::vec2 WorldToScreenSpace(glm::mat4 model_matrix, glm::vec3 object_point);
 
 	std::shared_ptr<KinectSensor> sensor;
-	
 	Camera camera;
 
 	glm::vec2 window_size = glm::vec2(1, 1);
 
 	double frame_time = 0, prev_frame_time = 0;
 	double prev_mouse_x = 0, prev_mouse_y = 0;
+
+	std::vector<SceneObject*> scene_objects;
 
 	GLuint world_fb, world_texture, world_depth_texture, screen_fb, screen_texture, screen_depth_texture;
 

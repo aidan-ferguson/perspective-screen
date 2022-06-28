@@ -5,8 +5,17 @@ DebugRenderer::DebugRenderer(std::shared_ptr<KinectSensor> snsr)
 	sensor = snsr;
 	glfwInit();
 
-	// TODO: get physical of the monitors attached and make screen that size automatically using glfwGetMonitorPhysicalSize()
 	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+	// Get physical size of the monitors attached in order to have an accurate perspective screen
+	int monitor_count;
+	GLFWmonitor** monitors = glfwGetMonitors(&monitor_count);
+	for (int monitor = 0; monitor < monitor_count; monitor++) {
+		monitor_names.push_back(glfwGetMonitorName(monitors[monitor]));
+		int width_mm, height_mm;
+		glfwGetMonitorPhysicalSize(monitors[monitor], &width_mm, &height_mm);
+		monitor_physical_sizes.push_back(glm::vec2((float)width_mm/1000.0f, (float)height_mm / 1000.0f));
+	}
 
 	window = CreateKinectWindow(window_name, mode->width, mode->height, false);
 	glfwSetWindowPos(window.get(), 0, 0);
@@ -134,69 +143,33 @@ void DebugRenderer::MainLoop()
 	CreateFramebuffer();
 
 	int point_cloud_shader = CreateShaderFromFiles("shaders/v_point_cloud.glsl", "shaders/f_point_cloud.glsl");
+	int basic_mesh_shader = CreateShaderFromFiles("shaders/v_basic_mesh.glsl", "shaders/f_basic_mesh.glsl");
+
 	bool show_point_cloud = true;
 	bool show_eye_points = true;
 
-	Vertex vertices[] = {
-		// Front face
-		glm::vec3(-0.5, 0.5, 0.5),  glm::vec2(0, 1), glm::vec3(0, 0, 1),
-		glm::vec3(0.5, 0.5, 0.5),   glm::vec2(1, 1), glm::vec3(0, 0, 1),
-		glm::vec3(-0.5, -0.5, 0.5), glm::vec2(0, 0), glm::vec3(0, 0, 1),
-		glm::vec3(0.5, -0.5, 0.5),  glm::vec2(1, 0), glm::vec3(0, 0, 1),
-		// Back face
-		glm::vec3(-0.5, 0.5, -0.5), glm::vec2(1, 1), glm::vec3(0, 0, -1),
-		glm::vec3(0.5, 0.5, -0.5),  glm::vec2(0, 1), glm::vec3(0, 0, -1),
-		glm::vec3(-0.5, -0.5, -0.5),glm::vec2(1, 0), glm::vec3(0, 0, -1),
-		glm::vec3(0.5, -0.5, -0.5), glm::vec2(0, 0), glm::vec3(0, 0, -1),
-		// Top Face
-		glm::vec3(-0.5, 0.5, 0.5),  glm::vec2(0, 1),  glm::vec3(0, 1, 0),
-		glm::vec3(0.5, 0.5, 0.5),   glm::vec2(1, 1),  glm::vec3(0, 1, 0),
-		glm::vec3(-0.5, 0.5, -0.5), glm::vec2(0, 0),  glm::vec3(0, 1, 0),
-		glm::vec3(0.5, 0.5, -0.5),  glm::vec2(1, 0),  glm::vec3(0, 1, 0),
-		// Bottom Face
-		glm::vec3(-0.5, -0.5, 0.5),  glm::vec2(0, 1),  glm::vec3(0, -1, 0),
-		glm::vec3(0.5, -0.5, 0.5),   glm::vec2(1, 1),  glm::vec3(0, -1, 0),
-		glm::vec3(-0.5, -0.5, -0.5), glm::vec2(0, 0),  glm::vec3(0, -1, 0),
-		glm::vec3(0.5, -0.5, -0.5),  glm::vec2(1, 0),  glm::vec3(0, -1, 0),
-		// Left Face
-		glm::vec3(-0.5, -0.5, -0.5),  glm::vec2(0, 0),  glm::vec3(-1, 0, 0),
-		glm::vec3(-0.5, 0.5, -0.5),   glm::vec2(0, 1),  glm::vec3(-1, 0, 0),
-		glm::vec3(-0.5, -0.5, 0.5),   glm::vec2(1, 0),  glm::vec3(-1, 0, 0),
-		glm::vec3(-0.5, 0.5, 0.5),    glm::vec2(1, 1),  glm::vec3(-1, 0, 0),
-		// Right Face
-		glm::vec3(0.5, -0.5, 0.5),   glm::vec2(0, 0),  glm::vec3(1, 0, 0),
-		glm::vec3(0.5, 0.5, 0.5),    glm::vec2(0, 1),  glm::vec3(1, 0, 0),
-		glm::vec3(0.5, -0.5, -0.5),  glm::vec2(1, 0),  glm::vec3(1, 0, 0),
-		glm::vec3(0.5, 0.5, -0.5),   glm::vec2(1, 1),  glm::vec3(1, 0, 0),
-	};
-	unsigned int indices[] = {
-		// Front
-		0, 3, 1,
-		0, 2, 3,
-		// Back
-		4, 5, 7,
-		4, 7, 6,
-		// Top
-		8, 9, 11,
-		8, 11, 10,
-		// Bottom
-		12, 15, 13,
-		12, 14, 15,
-		// Left
-		16, 19, 17,
-		16, 18, 19,
-		// Right
-		20, 23, 21,
-		20, 22, 23
-	};
+	Vertex* cube_vertices = Primitives::GetCubeVertices();
+	GLuint* cube_indices = Primitives::GetCubeIndices();
+	Mesh cube_mesh(cube_vertices, 24, cube_indices, 36, GL_STATIC_DRAW);
 
-	int basic_mesh_shader = CreateShaderFromFiles("shaders/v_basic_mesh.glsl", "shaders/f_basic_mesh.glsl");
-	Mesh kinect_mesh(vertices, 24, indices, 36, GL_STATIC_DRAW);
-	glm::vec3 kinect_sensor_position = glm::vec3(0.0f, 0.0f, 0.0f);
+	std::vector<SceneObject*> debug_scene_objects;
+	std::vector<SceneObject*> perspective_scene_objects;
 
-	Mesh screen_quad_mesh(vertices, 4, indices, 6, GL_STATIC_DRAW);
-	glm::vec3 world_screen_position = glm::vec3(0.0f, 0.0f, -0.5f);
-	glm::vec3 world_screen_scale = glm::vec3(1.0f, 1.0f, 0.1f);
+	SceneObject kinect_sensor("Kinect Sensor", cube_mesh, basic_mesh_shader);
+	kinect_sensor.scale = kinect_dimensions;
+	debug_scene_objects.push_back(&kinect_sensor);
+
+	SceneObject world_screen("World Screen", cube_mesh, basic_mesh_shader);
+	world_screen.position = glm::vec3(0.0f, 0.0f, -0.5f);
+	world_screen.scale = glm::vec3(1.0f, 1.0f, 0.05f);
+	world_screen.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	debug_scene_objects.push_back(&world_screen);
+
+	SceneObject cube("Cube", cube_mesh, basic_mesh_shader);
+	cube.position = glm::vec3(0.0f, 0.0f, -2.0f);
+	cube.scale = glm::vec3(0.1f);
+	perspective_scene_objects.push_back(&cube);
+
 
 	while (!(glfwWindowShouldClose(window.get()) || program_should_close)) {
 		frame_time = glfwGetTime() - prev_frame_time;
@@ -232,25 +205,21 @@ void DebugRenderer::MainLoop()
 			}
 		}
 
-		glUseProgram(basic_mesh_shader);
-		SetUniformMat4(basic_mesh_shader, "projection_matrix", camera.GetProjectionMatrix(prev_debug_render_window_sz.x, prev_debug_render_window_sz.y));
-		SetUniformMat4(basic_mesh_shader, "view_matrix", camera.GetViewMatrix());
+		glm::mat4 view_matrix = camera.GetViewMatrix();
+		glm::mat4 projection_matrix = camera.GetProjectionMatrix(prev_debug_render_window_sz.x, prev_debug_render_window_sz.y);
 
-		glm::mat4 kinect_model_matrix = glm::mat4(1.0f);
-		kinect_model_matrix = glm::translate(kinect_model_matrix, kinect_sensor_position);
-		kinect_model_matrix = glm::scale(kinect_model_matrix, kinect_dimensions);
-		SetUniformMat4(basic_mesh_shader, "model_matrix", kinect_model_matrix);
-		kinect_mesh.Draw();
+		for (SceneObject* scene_obj : debug_scene_objects) {
+			scene_obj->Draw(view_matrix, projection_matrix);
+		}
 
-		glm::mat4 world_screen_matrix = glm::mat4(1.0f);
-		world_screen_matrix = glm::translate(world_screen_matrix, world_screen_position);
-		world_screen_matrix = glm::scale(world_screen_matrix, world_screen_scale);
-		perspective_renderer->SetScreenModelMatrix(world_screen_matrix);
-		SetUniformMat4(basic_mesh_shader, "model_matrix", world_screen_matrix);
-		kinect_mesh.Draw();
+		for (SceneObject* scene_obj : perspective_scene_objects) {
+			scene_obj->Draw(view_matrix, projection_matrix);
+		}
 
 		// Draw the perspective view into a framebuffer
 		glViewport(0, 0, prev_perspective_render_window_sz.x, prev_perspective_render_window_sz.y);
+		perspective_renderer->SetScreenModelMatrix(world_screen.model_matrix);
+		perspective_renderer->SetSceneObjects(perspective_scene_objects);
 		perspective_renderer->DrawFrame();
 
 		ImGui_ImplOpenGL3_NewFrame();
@@ -271,7 +240,7 @@ void DebugRenderer::MainLoop()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		{
-			ImGui::Begin("test window");
+			ImGui::Begin("Debug view");
 			render_window_focused = false; // innocent until proven guilty
 			// Check mouse click held and that window is focused
 			if (glfwGetMouseButton(window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && ImGui::IsWindowFocused()) {
@@ -292,7 +261,7 @@ void DebugRenderer::MainLoop()
 		}
 
 		{
-			ImGui::Begin("Perspective View");
+			ImGui::Begin("Perspective view");
 			ImVec2 window_size = ImGui::GetWindowSize();
 			if (window_size.x != prev_debug_render_window_sz.x || window_size.y != prev_debug_render_window_sz.y) {
 				perspective_renderer->Resize(window_size.x, window_size.y);
@@ -303,14 +272,45 @@ void DebugRenderer::MainLoop()
 		}
 
 		{
-			ImGui::Begin("Demo window");
-			ImGui::Checkbox("Render point cloud", &show_point_cloud);
-			ImGui::Checkbox("Render eye points", &show_eye_points);
-			ImGui::DragFloat("Screen position X", &world_screen_position.x, 0.005f);
-			ImGui::DragFloat("Screen position Y", &world_screen_position.y, 0.005f);
-			ImGui::DragFloat("Screen position Z", &world_screen_position.z, 0.005f);
-			ImGui::DragFloat("Screen width", &world_screen_scale.x, 0.005f);
-			ImGui::DragFloat("Screen height", &world_screen_scale.y, 0.005f);
+			ImGui::Begin("Debug tools");
+			if (ImGui::TreeNode("Render options")) {
+				ImGui::Checkbox("Render point cloud", &show_point_cloud);
+				ImGui::Checkbox("Render eye points", &show_eye_points);
+				ImGui::Separator();
+				ImGui::Combo("Monitor", &current_selected_monitor, monitor_names.data(), monitor_names.size());
+				if (current_selected_monitor >= 0) {
+					glm::vec2 monitor_phys_size = monitor_physical_sizes[current_selected_monitor];
+					world_screen.scale.x = monitor_phys_size.x;
+					world_screen.scale.y = monitor_phys_size.y;
+					current_selected_monitor = -1;
+				}
+				ImGui::TreePop();
+			}
+			if (ImGui::TreeNode("Scene Objects")) {
+				if (ImGui::TreeNode("Debug Objects")) {
+					for (SceneObject* scene_obj : debug_scene_objects) {
+						if (ImGui::TreeNode(scene_obj->name.c_str())) {
+							ImGui::DragFloat3("Position", (float*)(void*)&scene_obj->position, 0.005f);
+							ImGui::DragFloat3("Rotation", (float*)(void*)&scene_obj->rotation, 0.25f);
+							ImGui::DragFloat3("Scale", (float*)(void*)&scene_obj->scale, 0.005f, 0, INT_MAX);
+							ImGui::TreePop();
+						}
+					}
+					ImGui::TreePop();
+				}
+				if (ImGui::TreeNode("Perspective Objects")) {
+					for (SceneObject* scene_obj : perspective_scene_objects) {
+						if (ImGui::TreeNode(scene_obj->name.c_str())) {
+							ImGui::DragFloat3("Position", (float*)(void*)&scene_obj->position, 0.005f);
+							ImGui::DragFloat3("Rotation", (float*)(void*)&scene_obj->rotation, 0.25f);
+							ImGui::DragFloat3("Scale", (float*)(void*)&scene_obj->scale, 0.005f, 0, INT_MAX);
+							ImGui::TreePop();
+						}
+					}
+					ImGui::TreePop();
+				}
+				ImGui::TreePop();
+			}
 			ImGui::End();
 		}
 

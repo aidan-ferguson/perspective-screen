@@ -4,58 +4,8 @@ PerspectiveRenderer::PerspectiveRenderer(std::shared_ptr<KinectSensor> snsr)
 {
 	sensor = snsr;
 
-	Vertex vertices[] = {
-		// Front face
-		glm::vec3(-0.5, 0.5, 0.5),  glm::vec2(0, 1), glm::vec3(0, 0, 1),
-		glm::vec3(0.5, 0.5, 0.5),   glm::vec2(1, 1), glm::vec3(0, 0, 1),
-		glm::vec3(-0.5, -0.5, 0.5), glm::vec2(0, 0), glm::vec3(0, 0, 1),
-		glm::vec3(0.5, -0.5, 0.5),  glm::vec2(1, 0), glm::vec3(0, 0, 1),
-		// Back face
-		glm::vec3(-0.5, 0.5, -0.5), glm::vec2(1, 1), glm::vec3(0, 0, -1),
-		glm::vec3(0.5, 0.5, -0.5),  glm::vec2(0, 1), glm::vec3(0, 0, -1),
-		glm::vec3(-0.5, -0.5, -0.5),glm::vec2(1, 0), glm::vec3(0, 0, -1),
-		glm::vec3(0.5, -0.5, -0.5), glm::vec2(0, 0), glm::vec3(0, 0, -1),
-		// Top Face
-		glm::vec3(-0.5, 0.5, 0.5),  glm::vec2(0, 1),  glm::vec3(0, 1, 0),
-		glm::vec3(0.5, 0.5, 0.5),   glm::vec2(1, 1),  glm::vec3(0, 1, 0),
-		glm::vec3(-0.5, 0.5, -0.5), glm::vec2(0, 0),  glm::vec3(0, 1, 0),
-		glm::vec3(0.5, 0.5, -0.5),  glm::vec2(1, 0),  glm::vec3(0, 1, 0),
-		// Bottom Face
-		glm::vec3(-0.5, -0.5, 0.5),  glm::vec2(0, 1),  glm::vec3(0, -1, 0),
-		glm::vec3(0.5, -0.5, 0.5),   glm::vec2(1, 1),  glm::vec3(0, -1, 0),
-		glm::vec3(-0.5, -0.5, -0.5), glm::vec2(0, 0),  glm::vec3(0, -1, 0),
-		glm::vec3(0.5, -0.5, -0.5),  glm::vec2(1, 0),  glm::vec3(0, -1, 0),
-		// Left Face
-		glm::vec3(-0.5, -0.5, -0.5),  glm::vec2(0, 0),  glm::vec3(-1, 0, 0),
-		glm::vec3(-0.5, 0.5, -0.5),   glm::vec2(0, 1),  glm::vec3(-1, 0, 0),
-		glm::vec3(-0.5, -0.5, 0.5),   glm::vec2(1, 0),  glm::vec3(-1, 0, 0),
-		glm::vec3(-0.5, 0.5, 0.5),    glm::vec2(1, 1),  glm::vec3(-1, 0, 0),
-		// Right Face
-		glm::vec3(0.5, -0.5, 0.5),   glm::vec2(0, 0),  glm::vec3(1, 0, 0),
-		glm::vec3(0.5, 0.5, 0.5),    glm::vec2(0, 1),  glm::vec3(1, 0, 0),
-		glm::vec3(0.5, -0.5, -0.5),  glm::vec2(1, 0),  glm::vec3(1, 0, 0),
-		glm::vec3(0.5, 0.5, -0.5),   glm::vec2(1, 1),  glm::vec3(1, 0, 0),
-	};
-	unsigned int indices[] = {
-		// Front
-		0, 3, 1,
-		0, 2, 3,
-		// Back
-		4, 5, 7,
-		4, 7, 6,
-		// Top
-		8, 9, 11,
-		8, 11, 10,
-		// Bottom
-		12, 15, 13,
-		12, 14, 15,
-		// Left
-		16, 19, 17,
-		16, 18, 19,
-		// Right
-		20, 23, 21,
-		20, 22, 23
-	};
+	Vertex* vertices = Primitives::GetCubeVertices();
+	GLuint* indices = Primitives::GetCubeIndices();
 
 	basic_mesh_shader = CreateShaderFromFiles("shaders/v_basic_mesh.glsl", "shaders/f_basic_mesh.glsl");
 	mesh = Mesh(vertices, 24, indices, 36, GL_STATIC_DRAW);
@@ -63,13 +13,9 @@ PerspectiveRenderer::PerspectiveRenderer(std::shared_ptr<KinectSensor> snsr)
 	screen_quad_shader = CreateShaderFromFiles("shaders/v_screen_quad.glsl", "shaders/f_screen_quad.glsl");
 	screen_quad_mesh = Mesh(screen_quad_vertices, 4, screen_quad_indices, 6, GL_DYNAMIC_DRAW);
 
-	Vertex screen_vertices[] = {
-		glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec2(0, 1), glm::vec3(1, 0, 0),
-		glm::vec3(0.5f, 0.5f, 0.0f), glm::vec2(1, 1), glm::vec3(1, 0, 0),
-		glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec2(0, 0), glm::vec3(1, 0, 0),
-		glm::vec3(0.5f, -0.5f, 0.0f), glm::vec2(1, 0), glm::vec3(1, 0, 0),
-	};
-	Mesh screen_mesh(screen_vertices, 4, screen_quad_indices, 6, GL_STATIC_DRAW);
+	Vertex* quad_vertices = Primitives::GetQuadVertices();
+	GLuint* quad_indices = Primitives::GetQuadIndices();
+	Mesh screen_mesh(quad_vertices, 4, quad_indices, 6, GL_STATIC_DRAW);
 
 	camera.position = glm::vec3(0, 0, 2);
 	camera.yaw = 270.0f;
@@ -132,6 +78,11 @@ void PerspectiveRenderer::SetScreenModelMatrix(glm::mat4 model_matrix)
 	screen_model_matrix = model_matrix;
 }
 
+void PerspectiveRenderer::SetSceneObjects(std::vector<SceneObject*> scene_objects)
+{
+	this->scene_objects = scene_objects;
+}
+
 glm::vec2 PerspectiveRenderer::WorldToScreenSpace(glm::mat4 model_matrix, glm::vec3 object_point)
 {
 	glm::vec4 ndc;
@@ -166,15 +117,16 @@ void PerspectiveRenderer::DrawFrame()
 	// Draw scene to framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, world_fb);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(basic_mesh_shader);
-	// TODO: replace with width and height given from debug renderer
-	SetUniformMat4(basic_mesh_shader, "projection_matrix", camera.GetProjectionMatrix(window_size.x, window_size.y));
-	SetUniformMat4(basic_mesh_shader, "view_matrix", camera.GetViewMatrix());
 
-	glm::mat4 cube_model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-	cube_model = glm::scale(cube_model, glm::vec3(1.0f));
-	SetUniformMat4(basic_mesh_shader, "model_matrix", cube_model);
-	mesh.Draw();
+	glm::mat4 view_matrix = camera.GetViewMatrix();
+	glm::mat4 projection_matrix = camera.GetProjectionMatrix(window_size.x, window_size.y);
+	for (SceneObject* scene_obj : scene_objects) {
+		scene_obj->Draw(view_matrix, projection_matrix);
+	}
+	//glm::mat4 cube_model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
+	//cube_model = glm::scale(cube_model, glm::vec3(1.0f));
+	//SetUniformMat4(basic_mesh_shader, "model_matrix", cube_model);
+	//mesh.Draw();
 
 	// Update screen quad texture coordinates to cut out the "screen" portion of the framebuffer
 	screen_quad_vertices[0].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(-0.5f, 0.5f, 0.0f));
@@ -182,8 +134,6 @@ void PerspectiveRenderer::DrawFrame()
 	screen_quad_vertices[2].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(-0.5f, -0.5f, 0.0f));
 	screen_quad_vertices[3].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(0.5f, -0.5f, 0.0f));
 	screen_quad_mesh.Update(screen_quad_vertices);
-
-	std::cout << screen_quad_vertices[0].texture_coordinate.x << ", " << screen_quad_vertices[0].texture_coordinate.x << std::endl;
 
 	// Draw cut-out quad to framebuffer for access later by imgui
 	glBindFramebuffer(GL_FRAMEBUFFER, screen_fb);

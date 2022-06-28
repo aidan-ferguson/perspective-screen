@@ -15,7 +15,8 @@
 #include "Shader.h"
 #include "PointCloud.h"
 #include "Camera.h"
-
+#include "Primitives.h"
+#include "SceneObject.h"
 
 class DebugRenderer {
 public:
@@ -33,6 +34,10 @@ private:
 	std::shared_ptr<PerspectiveRenderer> perspective_renderer = nullptr;
 
 	std::string window_name = std::string("Kinect Debug Renderer");
+	std::vector<const char*> monitor_names = {};
+	std::vector<glm::vec2> monitor_physical_sizes = {};
+	int current_selected_monitor = 0;
+
 
 	std::shared_ptr<GLFWwindow> window = nullptr;
 	bool program_should_close = false;
