@@ -155,12 +155,14 @@
     <ClCompile Include="..\..\..\Documents\C++ Libraries\include\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\..\..\Documents\C++ Libraries\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\Documents\C++ Libraries\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="KinectSensor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="OpenGLUtility.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="PerspectiveRenderer.cpp" />
     <ClCompile Include="PointCloud.cpp" />
@@ -169,11 +171,13 @@
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="KinectSensor.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="OpenGLUtility.h" />
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="PerspectiveRenderer.h" />
     <ClInclude Include="PointCloud.h" />

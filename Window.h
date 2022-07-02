@@ -5,4 +5,4 @@
 #include <memory>
 #include <GLFW/glfw3.h>
 
-std::shared_ptr<GLFWwindow> CreateKinectWindow(std::string window_name, int width, int height, bool default_resize_callback);
+std::shared_ptr<GLFWwindow> CreateKinectWindow(std::string window_name, int width, int height, bool fullscreen);

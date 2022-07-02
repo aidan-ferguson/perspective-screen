@@ -1,28 +1,26 @@
 #include "Window.h"
 
-void DestroyKinectWindow(GLFWwindow* window) {
-	glfwDestroyWindow(window);
-}
-
-void WindowSizeChangeCallback(GLFWwindow* window, int width, int height)
+std::shared_ptr<GLFWwindow> CreateKinectWindow(std::string window_name, int width, int height, bool fullscreen)
 {
-	glViewport(0, 0, width, height);
-}
+	if (fullscreen) {
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+		width = mode->width;
+		height = mode->height;
+	}
 
-std::shared_ptr<GLFWwindow> CreateKinectWindow(std::string window_name, int width, int height, bool default_resize_callback)
-{
 	// Define the window
-	std::shared_ptr<GLFWwindow> window(glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL), &DestroyKinectWindow);
+	std::shared_ptr<GLFWwindow> window(glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL), &glfwDestroyWindow);
 	assert(window != nullptr);
+
+	if (fullscreen) {
+		glfwSetWindowPos(window.get(), 0, 0);
+	}
 
 	// Assign the OpenGL context to the window
 	glfwMakeContextCurrent(window.get());
-	if (default_resize_callback) {
-		glfwSetFramebufferSizeCallback(window.get(), WindowSizeChangeCallback);
-	}
 
 	// Capture mouse 
-	glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 	return window;
 }

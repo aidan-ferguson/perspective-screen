@@ -15,6 +15,7 @@
 #include "Mesh.h"
 #include "Primitives.h"
 #include "SceneObject.h"
+#include "OpenGLUtility.h"
 
 class PerspectiveRenderer
 {
@@ -27,7 +28,7 @@ public:
 	void SetSceneObjects(std::vector<SceneObject*> scene_objects);
 
 private:
-	void CreateFramebuffer(GLuint& fb_id, GLuint& fb_texture_id, GLuint& depth_texture_id);
+	void CreateFramebuffer(GLuint& fb_id, GLuint& rgb_buffer, GLuint& depth_texture_id);
 	glm::vec2 WorldToScreenSpace(glm::mat4 model_matrix, glm::vec3 object_point);
 
 	std::shared_ptr<KinectSensor> sensor;

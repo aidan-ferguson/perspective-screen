@@ -1,5 +1,6 @@
 #include "PointCloud.h"
 
+// TODO: merge pointcloud and mesh
 PointCloud::PointCloud(std::shared_ptr<float> points, int n_pts, float sz_pts)
 {
 	// Init point cloud to all 0
