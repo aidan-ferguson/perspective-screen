@@ -15,13 +15,16 @@ class Mesh
 {
 public:
 	Mesh() = default;
-	Mesh(Vertex* vertices, int _n_vertices, unsigned int* indices, int n_indices, GLenum usage);
-	void Update(Vertex* vertices);
+	Mesh(Vertex* vertices, int _n_vertices, unsigned int* indices, int n_indices, GLenum buffer_usage, GLenum draw_mode);
+	void Update();
 	void Draw();
 
+	Vertex* vertices = nullptr;
 private:
 	GLuint VAO, VBO, EBO = 0;
 	unsigned int n_indices, n_vertices = 0;
-	GLenum buffer_usage;
+	bool use_draw_elements = false;
+	GLenum buffer_usage, draw_mode;
+
 };
 

@@ -4,11 +4,12 @@
 #include <assert.h>
 #include <iostream>
 #include <array>
+#include <vector>
 
 #include <Kinect.h>
 #include <Kinect.Face.h>
 
-#include "PointCloud.h"
+#include "Mesh.h"
 
 #define ASSERT_HRESULT(hr) if(hr != S_OK){ std::cout << "HRESULT error: " << std::hex << hr << std::dec << std::endl; assert(false);}
 
@@ -22,8 +23,8 @@ public:
 	KinectSensor();
 	~KinectSensor();
 	
-	bool GetColourDepthPoints(std::shared_ptr<float> points);
-	bool GetColouredEyePoints(std::shared_ptr<float> points);
+	bool GetColourDepthPoints(Vertex* points);
+	bool GetColouredEyePoints(Vertex* points);
 	std::array<bool, BODY_COUNT> GetAvailableFaces();
 	std::vector<std::shared_ptr<CameraSpacePoint>> GetEyePositions(unsigned int face_id);
 	bool UpdateFaceData();
@@ -51,8 +52,8 @@ private:
 	unsigned int w_rgb = 1920;
 	unsigned int h_rgb = 1080;
 
-	float depth_overlap_colour[3] = { 0.721f, 0.8f, 0.835f };
-	float eye_colour[3] = { 0.0f, 1.0f, 0.0f };
+	glm::vec3 depth_overlap_colour = glm::vec3( 0.721f, 0.8f, 0.835f );
+	glm::vec3 eye_colour = glm::vec3( 0.0f, 1.0f, 0.0f );
 	
 	std::shared_ptr<UINT16[]> depth_buffer = nullptr;
 	std::shared_ptr<unsigned char[]> rgb_buffer = nullptr;

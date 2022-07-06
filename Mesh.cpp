@@ -1,21 +1,31 @@
 #include "Mesh.h"
 
-Mesh::Mesh(Vertex* vertices, int _n_vertices, unsigned int* indices, int _n_indices, GLenum usage)
+// If indices pointer is nullptr, then glDrawArrays will be used, glDrawElements if not nullptr
+Mesh::Mesh(Vertex* vertices, int _n_vertices, unsigned int* indices, int _n_indices, GLenum buffer_usage, GLenum draw_mode)
 {
-    buffer_usage = usage;
     n_indices = _n_indices;
     n_vertices = _n_vertices;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    this->buffer_usage = buffer_usage;
+    this->draw_mode = draw_mode;
 
+    // If buffer will be changed in the future, store the vertices
+    if (buffer_usage == GL_DYNAMIC_DRAW) {
+        this->vertices = vertices;
+    }
+
+    glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
+    glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, n_vertices * sizeof(Vertex), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, n_vertices * sizeof(Vertex), vertices, buffer_usage);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, n_indices * sizeof(unsigned int), indices, usage);
+    if (indices != nullptr) {
+        use_draw_elements = true;
+        glGenBuffers(1, &EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, n_indices * sizeof(unsigned int), indices, buffer_usage);
+    }
 
     // Position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
@@ -34,7 +44,7 @@ Mesh::Mesh(Vertex* vertices, int _n_vertices, unsigned int* indices, int _n_indi
 
 }
 
-void Mesh::Update(Vertex* vertices) {
+void Mesh::Update() {
     if (buffer_usage == GL_DYNAMIC_DRAW) {
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         void* vbo_buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
@@ -46,5 +56,9 @@ void Mesh::Update(Vertex* vertices) {
 void Mesh::Draw()
 {
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, n_indices, GL_UNSIGNED_INT, 0);
+    if (use_draw_elements) {
+        glDrawElements(draw_mode, n_indices, GL_UNSIGNED_INT, 0);
+    } else {
+        glDrawArrays(draw_mode, 0, n_vertices);
+    }
 }

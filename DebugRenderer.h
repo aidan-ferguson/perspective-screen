@@ -22,12 +22,16 @@
 class DebugRenderer {
 public:
 	DebugRenderer();
-	void MainLoop();
 	void DrawFrame(std::vector<SceneObject>& debug_scene_objects, std::vector<SceneObject>& perspective_scene_objects);
 	void HandleInput(float frame_time);
 	void UpdateMousePosition();
 
 	glm::vec2 renderer_size = glm::vec2(1, 1);
+
+	SceneObject depth_point_cloud;
+	SceneObject eye_point_cloud;
+	bool show_depth_point_cloud = true;
+	bool show_eye_point_cloud = true;
 
 	GLuint rgb_buffer = 0;
 	GLuint depth_buffer = 0;

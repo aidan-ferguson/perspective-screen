@@ -9,6 +9,7 @@
 class SceneObject
 {
 public:
+	SceneObject() = default;
 	SceneObject(std::string name, Mesh mesh, GLuint shader);
 	void Draw(glm::mat4 view_matrix, glm::mat4 projection_matrix);
 

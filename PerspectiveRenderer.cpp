@@ -1,64 +1,35 @@
 #include "PerspectiveRenderer.h"
 
-PerspectiveRenderer::PerspectiveRenderer(std::shared_ptr<KinectSensor> snsr)
+PerspectiveRenderer::PerspectiveRenderer()
 {
-	sensor = snsr;
-
-	Vertex* vertices = Primitives::GetCubeVertices();
-	GLuint* indices = Primitives::GetCubeIndices();
-
-	basic_mesh_shader = CreateShaderFromFiles("shaders/v_basic_mesh.glsl", "shaders/f_basic_mesh.glsl");
-	mesh = Mesh(vertices, 24, indices, 36, GL_STATIC_DRAW);
-
 	screen_quad_shader = CreateShaderFromFiles("shaders/v_screen_quad.glsl", "shaders/f_screen_quad.glsl");
-	screen_quad_mesh = Mesh(screen_quad_vertices, 4, screen_quad_indices, 6, GL_DYNAMIC_DRAW);
+	screen_quad_mesh = Mesh(screen_quad_vertices, 4, screen_quad_indices, 6, GL_DYNAMIC_DRAW, GL_TRIANGLES);
 
 	Vertex* quad_vertices = Primitives::GetQuadVertices();
 	GLuint* quad_indices = Primitives::GetQuadIndices();
-	Mesh screen_mesh(quad_vertices, 4, quad_indices, 6, GL_STATIC_DRAW);
+	Mesh screen_mesh(quad_vertices, 4, quad_indices, 6, GL_STATIC_DRAW, GL_TRIANGLES);
 
 	camera.position = glm::vec3(0, 0, 2);
 	camera.yaw = 270.0f;
 	camera.UpdateDirection();
+	// Human eye fov TODO: split horizontal and vertical fov?
+	camera.fov = 150.0f;
 
-	CreateFramebuffer(world_fb, world_texture, world_depth_texture);
-	CreateFramebuffer(screen_fb, screen_texture, screen_depth_texture);
-}
-
-GLuint PerspectiveRenderer::GetFrameBufferTexture()
-{
-	return screen_texture;
-}
-
-// May need to create a new one if the window gets resized (using hardcoded values for now)
-// Make more modular (also dupe code in debug renderer)
-void PerspectiveRenderer::CreateFramebuffer(GLuint& fb_id, GLuint& rgb_buffer, GLuint& depth_texture_id)
-{
-	// use opengl utility.h
+	// Multisample frame buffer
+	CreateMultisampleFrameBuffer(world_fb, world_rgb_texture, world_depth_texture, multisampling_n_samples, renderer_size.x, renderer_size.y);
+	// Intermediate framebuffer (needed to convert from multisample texture to rgb texture)
+	CreateFramebuffer(intermediate_fb, intermediate_texture, intermediate_depth_texture, renderer_size.x, renderer_size.y);
+	// Final screen quad framebuffer
+	CreateFramebuffer(screen_fb, screen_texture, screen_depth_texture, renderer_size.x, renderer_size.y);
 }
 
 void PerspectiveRenderer::Resize(float x, float y)
 {
-	window_size = glm::vec2(x, y);
-	glBindTexture(GL_TEXTURE_2D, screen_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_size.x, window_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, screen_depth_texture);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_size.x, window_size.y);
+	renderer_size = glm::vec2(x, y);
 
-	glBindTexture(GL_TEXTURE_2D, world_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_size.x, window_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, world_depth_texture);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_size.x, window_size.y);
-}
-
-void PerspectiveRenderer::SetScreenModelMatrix(glm::mat4 model_matrix)
-{
-	screen_model_matrix = model_matrix;
-}
-
-void PerspectiveRenderer::SetSceneObjects(std::vector<SceneObject*> scene_objects)
-{
-	this->scene_objects = scene_objects;
+	ResizeMultisampleFrameBuffer(world_rgb_texture, world_depth_texture, multisampling_n_samples, renderer_size.x, renderer_size.y);
+	ResizeFramebuffer(intermediate_texture, intermediate_depth_texture, renderer_size.x, renderer_size.y);
+	ResizeFramebuffer(screen_texture, screen_depth_texture, renderer_size.x, renderer_size.y);
 }
 
 glm::vec2 PerspectiveRenderer::WorldToScreenSpace(glm::mat4 model_matrix, glm::vec3 object_point)
@@ -66,7 +37,7 @@ glm::vec2 PerspectiveRenderer::WorldToScreenSpace(glm::mat4 model_matrix, glm::v
 	glm::vec4 ndc;
 	glm::vec2 screen_position;
 
-	int width = window_size.x, height = window_size.y;
+	int width = renderer_size.x, height = renderer_size.y;
 
 	ndc = camera.GetProjectionMatrix(width, height) * camera.GetViewMatrix() * model_matrix * glm::vec4(object_point, 1.0f);
 	ndc = ndc / ndc.w;
@@ -77,48 +48,41 @@ glm::vec2 PerspectiveRenderer::WorldToScreenSpace(glm::mat4 model_matrix, glm::v
 }
 
 
-void PerspectiveRenderer::DrawFrame()
+void PerspectiveRenderer::DrawFrame(std::vector<SceneObject>& scene_objects)
 {
-	//sensor->GetFrame();
-	//sensor->UpdateFaceData();
-	/*int face_index = sensor->GetFirstNotableFaceIndex();
-	if (face_index >= 0) {
-		eye_pos = sensor->eyes[face_index * 2];
-		Vector4 rotation = sensor->face_rotations[face_index];
-
-		if (eye_pos) {
-			camera.position = glm::vec3(eye_pos->X, eye_pos->Y, eye_pos->Z);
-			camera.UpdateDirection();
-		}
-	}*/
-
 	// Draw scene to framebuffer
+	glViewport(0, 0, renderer_size.x, renderer_size.y);
 	glBindFramebuffer(GL_FRAMEBUFFER, world_fb);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glm::mat4 view_matrix = camera.GetViewMatrix();
-	glm::mat4 projection_matrix = camera.GetProjectionMatrix(window_size.x, window_size.y);
-	for (SceneObject* scene_obj : scene_objects) {
-		scene_obj->Draw(view_matrix, projection_matrix);
-	}
-	//glm::mat4 cube_model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-	//cube_model = glm::scale(cube_model, glm::vec3(1.0f));
-	//SetUniformMat4(basic_mesh_shader, "model_matrix", cube_model);
-	//mesh.Draw();
+	// Make camera look at screen
+	camera.direction = glm::normalize(glm::vec3(screen_model_matrix[3]) - camera.position);
 
-	// Update screen quad texture coordinates to cut out the "screen" portion of the framebuffer
-	screen_quad_vertices[0].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(-0.5f, 0.5f, 0.0f));
-	screen_quad_vertices[1].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(0.5f, 0.5f, 0.0f));
-	screen_quad_vertices[2].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(-0.5f, -0.5f, 0.0f));
-	screen_quad_vertices[3].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(0.5f, -0.5f, 0.0f));
-	screen_quad_mesh.Update(screen_quad_vertices);
+	glm::mat4 view_matrix = camera.GetViewMatrix();
+	glm::mat4 projection_matrix = camera.GetProjectionMatrix(renderer_size.x, renderer_size.y);
+	for (SceneObject& scene_obj : scene_objects) {
+		scene_obj.Draw(view_matrix, projection_matrix);
+	}
+
+	// Resolve multisample framebuffer and copy it into the texture of the intermediate framebuffer
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, world_fb);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_fb);
+	glBlitFramebuffer(0, 0, renderer_size.x, renderer_size.y, 0, 0, renderer_size.x, renderer_size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	// Draw cut-out quad to framebuffer for access later by imgui
 	glBindFramebuffer(GL_FRAMEBUFFER, screen_fb);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Update screen quad texture coordinates to cut out the "screen" portion of the framebuffer
+	screen_quad_mesh.vertices[0].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(-0.5f, 0.5f, 0.0f));
+	screen_quad_mesh.vertices[1].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(0.5f, 0.5f, 0.0f));
+	screen_quad_mesh.vertices[2].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(-0.5f, -0.5f, 0.0f));
+	screen_quad_mesh.vertices[3].texture_coordinate = WorldToScreenSpace(screen_model_matrix, glm::vec3(0.5f, -0.5f, 0.0f));
+	screen_quad_mesh.Update();
+
 	glUseProgram(screen_quad_shader);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, world_texture);
+	glBindTexture(GL_TEXTURE_2D, intermediate_texture);
 	SetUniformInt(screen_quad_shader, "fb_texture", 0);
 	screen_quad_mesh.Draw();
 }

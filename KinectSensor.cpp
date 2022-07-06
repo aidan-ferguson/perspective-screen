@@ -128,11 +128,11 @@ bool KinectSensor::UpdateBodyData()
 }
 
 /// <summary>
-/// Populates an array with 3d points and corresponding rgb colours
+/// Populates an array with 3d points and corresponding rgb colours (colours stored in vertex normal)
 /// </summary>
-/// <param name="points">Pointer to points to be updated</param>
+/// <param name="points">Pointer to vertices to be updated</param>
 /// <returns>true when points array has been modified</returns>
-bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
+bool KinectSensor::GetColourDepthPoints(Vertex* points)
 {
 	// Also check for HRESULT errors
 	if (!UpdateDepthBuffer() || !UpdateRGBBuffer()) {
@@ -145,20 +145,23 @@ bool KinectSensor::GetColourDepthPoints(std::shared_ptr<float> points)
 	std::shared_ptr<ColorSpacePoint[]> colour_points(new ColorSpacePoint[w_depth * h_depth]);
 	mapper->MapCameraPointsToColorSpace(w_depth * h_depth, camera_points.get(), w_depth * h_depth, colour_points.get());
 
+	// Using memcpy here because constructing a Vertex takes too long at scale
 	for (unsigned int i = 0; i < w_depth * h_depth; i++) {
-		float* point = &points.get()[i * 6];
-		memcpy(point, &camera_points[i], 3 * sizeof(float));
+		Vertex* point = &points[i];
+		point->position.x = camera_points[i].X;
+		point->position.y = camera_points[i].Y;
+		point->position.z = camera_points[i].Z;
 
 		ColorSpacePoint col_point = colour_points[i];
 		if (col_point.X < 1 || col_point.X >= w_rgb || col_point.Y < 1 || col_point.Y >= h_rgb) {
-			memcpy(&point[3], &depth_overlap_colour, 3 * sizeof(float));
+			point->normal = depth_overlap_colour;
 		}
 		else {
 			int x = (int)col_point.X - 1;
 			int y = (int)col_point.Y - 1;
-			point[3] = (float)rgb_buffer[4 * (x + y * w_rgb) + 0] / 255.0f;
-			point[4] = (float)rgb_buffer[4 * (x + y * w_rgb) + 1] / 255.0f;
-			point[5] = (float)rgb_buffer[4 * (x + y * w_rgb) + 2] / 255.0f;
+			point->normal.x = (float)rgb_buffer[4 * (x + y * w_rgb) + 0] / 255.0f;
+			point->normal.y = (float)rgb_buffer[4 * (x + y * w_rgb) + 1] / 255.0f;
+			point->normal.z = (float)rgb_buffer[4 * (x + y * w_rgb) + 2] / 255.0f;
 		}
 	}
 
@@ -246,17 +249,20 @@ bool KinectSensor::UpdateFaceData()
 /// </summary>
 /// <param name="points">Pointer to start of array which holds points for eye tracking visualisation</param>
 /// <returns>true on eye point update</returns>
-bool KinectSensor::GetColouredEyePoints(std::shared_ptr<float> points)
+bool KinectSensor::GetColouredEyePoints(Vertex* points)
 {
-	/*if (!UpdateFaceData()) {
+	if (!UpdateFaceData()) {
 		return false;
-	}*/
+	}
 	
 	for (int i = 0; i < eyes.size(); i++) {
 		if (eyes[i].get() != nullptr) {
-			float* eye_point = &points.get()[i * 6];
-			memcpy(&eye_point[0], eyes[i].get(), sizeof(CameraSpacePoint));
-			memcpy(&eye_point[3], eye_colour, 3 * sizeof(float));
+			Vertex* eye_point = &points[i];
+			eye_point->position.x = eyes[i].get()->X;
+			eye_point->position.y = eyes[i].get()->Y;
+			eye_point->position.z = eyes[i].get()->Z;
+
+			eye_point->normal = eye_colour;
 		}
 	}
 
