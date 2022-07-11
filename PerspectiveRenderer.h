@@ -26,12 +26,15 @@ public:
 
 	GLuint world_fb, world_rgb_texture, world_depth_texture, intermediate_fb, intermediate_texture, intermediate_depth_texture, screen_fb, screen_texture, screen_depth_texture;
 	Camera camera;
+	glm::vec2 window_size = glm::vec2(1, 1);
 	glm::vec2 renderer_size = glm::vec2(1, 1);
 	glm::mat4 screen_model_matrix = glm::mat4(1.0f);
 
 private:
 	glm::vec2 WorldToScreenSpace(glm::mat4 model_matrix, glm::vec3 object_point);
+	float CalculateMinimumViableFov();
 
+	const GLuint resolution_scalar = 1;
 	const GLuint multisampling_n_samples = 3;
 	
 	// Calibration will need to be improved (currently screen will be inline with sensor)

@@ -407,5 +407,9 @@ FodyWeavers.xsd
 
 # Ignore glad.c
 glad.c
+
+# Kinect face recognition database
 /NuiDatabase
 *.dll
+
+/config

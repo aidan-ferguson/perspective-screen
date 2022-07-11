@@ -8,6 +8,9 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <string>
+#include <iostream>
+#include <filesystem>
+#include <json/json.hpp>
 
 #include "Window.h"
 #include "DebugRenderer.h"
@@ -25,6 +28,9 @@ private:
 	void ImGuiSetup();
 	void DrawImGui();
 	void SceneObjectSetup();
+	void GetConfigFileNames();
+	void LoadConfigFile(std::string filename);
+	void SaveConfigFile(std::string filename);
 
 	std::shared_ptr<GLFWwindow> window = nullptr;
 	std::shared_ptr<DebugRenderer> debug_renderer = nullptr;
@@ -36,5 +42,10 @@ private:
 
 	double frame_time = 0, prev_frame_time = 0;
 	bool should_program_close = false;
+
+	const std::string config_path = ".\\config";
+	std::vector<std::string> config_files = {};
+	char save_filename_buffer[128] = "Hello, world!";
+	int selected_config = -1;
 };
 

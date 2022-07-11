@@ -19,6 +19,9 @@
     <Filter Include="Source Files\imgui">
       <UniqueIdentifier>{6a4961f1-3302-4a90-bfc6-a98ae5531412}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Config">
+      <UniqueIdentifier>{2235daee-cf36-414f-8c58-2d64c96197d9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -127,7 +130,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\f_basic_mesh.glsl">
+    <None Include="shaders\f_debug_mesh.glsl">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="shaders\f_point_cloud.glsl">
@@ -136,7 +139,7 @@
     <None Include="shaders\f_screen_quad.glsl">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\v_basic_mesh.glsl">
+    <None Include="shaders\v_debug_mesh.glsl">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="shaders\v_point_cloud.glsl">
@@ -147,6 +150,15 @@
     </None>
     <None Include="imgui.ini">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\f_perspective_mesh.glsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="shaders\v_perspective_mesh.glsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="config\bedroom.json">
+      <Filter>Resource Files\Config</Filter>
     </None>
   </ItemGroup>
 </Project>

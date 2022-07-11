@@ -4,8 +4,8 @@ int CreateShaderFromFiles(std::string vertex_filename, std::string fragment_file
 {
 	int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 	int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	std::string v_shader_code = ReadShaderFile(vertex_filename);
-	std::string f_shader_code = ReadShaderFile(fragment_filename);
+	std::string v_shader_code = ReadPlaintextFile(vertex_filename);
+	std::string f_shader_code = ReadPlaintextFile(fragment_filename);
 	
 	CompileShader(vertex_shader, v_shader_code);
 	CompileShader(fragment_shader, f_shader_code);
@@ -40,17 +40,17 @@ int CreateShaderFromFiles(std::string vertex_filename, std::string fragment_file
 	return program_id;
 }
 
-std::string ReadShaderFile(std::string filename) {
-	std::ifstream shaderFile;
-	std::stringstream shaderStream;
+std::string ReadPlaintextFile(std::string filename) {
+	std::ifstream file;
+	std::stringstream file_stream;
 
-	shaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
 	try {
-		shaderFile.open(filename);
-		shaderStream << shaderFile.rdbuf();
-		shaderFile.close();
-		return shaderStream.str();
+		file.open(filename);
+		file_stream << file.rdbuf();
+		file.close();
+		return file_stream.str();
 	}
 	catch (std::ifstream::failure& error) {
 		std::cout << "Shader read file failed (" << filename << "): " << error.code() << std::endl;
@@ -58,6 +58,13 @@ std::string ReadShaderFile(std::string filename) {
 	}
 
 	return std::string("");
+}
+
+void WritePlaintextFile(std::string filename, std::string filecontent)
+{
+	std::ofstream fileout(filename);
+	fileout << filecontent;
+	fileout.close();
 }
 
 void CompileShader(int shader, std::string shader_code)

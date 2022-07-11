@@ -20,12 +20,13 @@ PerspectiveRenderer::PerspectiveRenderer()
 	// Intermediate framebuffer (needed to convert from multisample texture to rgb texture)
 	CreateFramebuffer(intermediate_fb, intermediate_texture, intermediate_depth_texture, renderer_size.x, renderer_size.y);
 	// Final screen quad framebuffer
-	CreateFramebuffer(screen_fb, screen_texture, screen_depth_texture, renderer_size.x, renderer_size.y);
+	CreateFramebuffer(screen_fb, screen_texture, screen_depth_texture, window_size.x, window_size.y);
 }
 
 void PerspectiveRenderer::Resize(float x, float y)
 {
-	renderer_size = glm::vec2(x, y);
+	window_size = glm::vec2(x, y);
+	renderer_size = glm::vec2(x * resolution_scalar, y * resolution_scalar);
 
 	ResizeMultisampleFrameBuffer(world_rgb_texture, world_depth_texture, multisampling_n_samples, renderer_size.x, renderer_size.y);
 	ResizeFramebuffer(intermediate_texture, intermediate_depth_texture, renderer_size.x, renderer_size.y);
@@ -47,6 +48,30 @@ glm::vec2 PerspectiveRenderer::WorldToScreenSpace(glm::mat4 model_matrix, glm::v
 	return screen_position;
 }
 
+// Calculates the required FOV of the camera for maximum resolution without clipping out the world screen
+float PerspectiveRenderer::CalculateMinimumViableFov()
+{
+	// Using dot product, calculate the vertical angle from the cameras perspective and the horizontal,
+	//  then return the minimum of the two
+	glm::vec3 cam_to_topleft = screen_top_left - camera.position;
+	glm::vec3 cam_to_topright = screen_top_right - camera.position;
+	glm::vec3 cam_to_bottomleft = screen_bottom_left - camera.position;
+
+	// Dot product between horizontal and vertical vectors
+	float horizontal_dot = glm::dot(cam_to_topleft, cam_to_topright);
+	float vertical_dot = glm::dot(cam_to_topleft, cam_to_bottomleft);
+
+	// Calculate angle in radians
+	float horizontal_angle = acos(horizontal_dot/(glm::length(cam_to_topleft) * glm::length(cam_to_topright)));
+	float vertical_angle = acos(vertical_dot / (glm::length(cam_to_topleft) * glm::length(cam_to_bottomleft)));
+
+	// Convert to degrees
+	horizontal_angle = horizontal_angle * (180.0 / M_PI);
+	vertical_angle = vertical_angle * (180.0 / M_PI);
+
+	return std::max(horizontal_angle, vertical_angle);
+}
+
 
 void PerspectiveRenderer::DrawFrame(std::vector<SceneObject>& scene_objects)
 {
@@ -57,6 +82,9 @@ void PerspectiveRenderer::DrawFrame(std::vector<SceneObject>& scene_objects)
 
 	// Make camera look at screen
 	camera.direction = glm::normalize(glm::vec3(screen_model_matrix[3]) - camera.position);
+
+	// Calculate minimum viable fov
+	camera.fov = CalculateMinimumViableFov();
 
 	glm::mat4 view_matrix = camera.GetViewMatrix();
 	glm::mat4 projection_matrix = camera.GetProjectionMatrix(renderer_size.x, renderer_size.y);

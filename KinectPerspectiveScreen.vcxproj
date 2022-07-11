@@ -120,6 +120,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Program Files\Microsoft SDKs\Kinect\v2.0_1409\inc;C:\Users\Aidan\Documents\C++ Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -186,11 +187,14 @@
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="config\bedroom.json" />
     <None Include="imgui.ini" />
-    <None Include="shaders\f_basic_mesh.glsl" />
+    <None Include="shaders\f_debug_mesh.glsl" />
+    <None Include="shaders\f_perspective_mesh.glsl" />
     <None Include="shaders\f_point_cloud.glsl" />
     <None Include="shaders\f_screen_quad.glsl" />
-    <None Include="shaders\v_basic_mesh.glsl" />
+    <None Include="shaders\v_debug_mesh.glsl" />
+    <None Include="shaders\v_perspective_mesh.glsl" />
     <None Include="shaders\v_point_cloud.glsl" />
     <None Include="shaders\v_screen_quad.glsl" />
   </ItemGroup>

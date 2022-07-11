@@ -5,23 +5,26 @@ Application::Application(std::string name)
 	// Create and position window
 	glfwInit();
 	window = CreateKinectWindow(name, 1500, 800, false);
-
+	
 	// Initliase GLAD and OpenGL
 	assert(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) != 0);
 	OpenGLSetup();
-
+	
 	// ImGui setup
 	ImGuiSetup();
-
+	
 	// Setup both renderers
 	debug_renderer = std::shared_ptr<DebugRenderer>(new DebugRenderer());
 	perspective_renderer = std::shared_ptr<PerspectiveRenderer>(new PerspectiveRenderer());
-
+	
 	// Setup kinect sensor
 	kinect_sensor = std::shared_ptr<KinectSensor>(new KinectSensor());
-
+	
 	// Create default scene objects
 	SceneObjectSetup();
+
+	// Populate the vector which stores names for config files
+	GetConfigFileNames();
 }
 
 void Application::OpenGLSetup()
@@ -47,6 +50,61 @@ void Application::ImGuiSetup()
 	ImGui::StyleColorsClassic();
 }
 
+void Application::GetConfigFileNames()
+{
+	config_files = {};
+	std::vector<std::string> tmp_cfg_files = {};
+	for (const auto& elem : std::filesystem::directory_iterator(config_path)) {
+		if (elem.is_regular_file()) {
+			config_files.push_back(elem.path().stem().string());
+		}
+	}
+}
+
+void Application::LoadConfigFile(std::string filename)
+{
+	std::string filepath = (std::filesystem::path(config_path) / std::filesystem::path(filename + std::string(".json"))).string();
+	std::string json_text = ReadPlaintextFile(filepath);
+
+	nlohmann::json config = nlohmann::json::parse(json_text);
+
+	if (config.contains("debug_scene_objects")) {
+		for (SceneObject& scene_object : debug_scene_objects) {
+			if (config["debug_scene_objects"].contains(scene_object.name)) {
+				for (auto& [key, value] : config["debug_scene_objects"][scene_object.name].items()) {
+					if (value.is_array() && value.size() == 3) {
+						if (key == "position") {
+							scene_object.position = glm::vec3(value[0], value[1], value[2]);
+						}
+						else if (key == "rotation") {
+							scene_object.rotation = glm::vec3(value[0], value[1], value[2]);
+						}
+						else if (key == "scale") {
+							scene_object.scale = glm::vec3(value[0], value[1], value[2]);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void Application::SaveConfigFile(std::string filename) 
+{
+	nlohmann::json config = {};
+	config["debug_scene_objects"] = {};
+	for (SceneObject& obj : debug_scene_objects) {
+		config["debug_scene_objects"][obj.name] = {};
+		config["debug_scene_objects"][obj.name]["position"] = { obj.position[0], obj.position[1], obj.position[2] };
+		config["debug_scene_objects"][obj.name]["rotation"] = { obj.rotation[0], obj.rotation[1], obj.rotation[2] };
+		config["debug_scene_objects"][obj.name]["scale"] = { obj.scale[0], obj.scale[1], obj.scale[2] };
+ 	}
+
+	std::string json_text = config.dump();
+	std::string filepath = (std::filesystem::path(config_path) / std::filesystem::path(filename + std::string(".json"))).string();
+	WritePlaintextFile(filepath, json_text);
+}
+
 void Application::DrawImGui() {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -62,7 +120,7 @@ void Application::DrawImGui() {
 		}
 		ImGui::EndMainMenuBar();
 	}
-	
+
 
 	//ImGui::ShowDemoWindow();
 
@@ -89,12 +147,12 @@ void Application::DrawImGui() {
 
 	ImGui::Begin("Perspective view");
 	ImVec2 perspective_window_size = ImGui::GetWindowSize();
-	if (perspective_window_size.x != perspective_renderer->renderer_size.x || perspective_window_size.y != perspective_renderer->renderer_size.y) {
+	if (perspective_window_size.x != perspective_renderer->window_size.x || perspective_window_size.y != perspective_renderer->window_size.y) {
 		perspective_renderer->Resize(perspective_window_size.x, perspective_window_size.y);
 	}
 	ImGui::Image((void*)(intptr_t)perspective_renderer->screen_texture, ImVec2(perspective_window_size.x, perspective_window_size.y), ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::End();
-	
+
 
 	ImGui::Begin("Debug tools");
 	ImGui::SetNextItemOpen(true);
@@ -102,7 +160,37 @@ void Application::DrawImGui() {
 		ImGui::Checkbox("Render point cloud", &debug_renderer->show_depth_point_cloud);
 		ImGui::Checkbox("Render eye points", &debug_renderer->show_eye_point_cloud);
 		ImGui::DragFloat3("Perspective camera", (float*)(void*)&perspective_renderer->camera.position, 0.005);
+		ImGui::DragFloat("Perspective fov", (float*)(void*)&perspective_renderer->camera.fov, 0.5);
+		
+		// Saving and loading of scenes
 		ImGui::Separator();
+		ImGui::InputText("CFG filename", save_filename_buffer, 128);
+		if (ImGui::Button("Save config")) {
+			SaveConfigFile(std::string(save_filename_buffer));
+		}
+
+		if (ImGui::Button("Reload")) {
+			GetConfigFileNames();
+		}
+		ImGui::SameLine();
+		if (ImGui::BeginCombo("Load CFG", "")) {
+			for (int i = 0; i < config_files.size(); i++) {
+
+				const bool is_selected = (selected_config == i);
+				if (ImGui::Selectable(config_files[i].c_str(), is_selected)) {
+					selected_config = i;
+					LoadConfigFile(config_files[i]);
+				}
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Separator();
+		ImGui::Text(std::string("Frame time: " + std::to_string(frame_time * 1000)).c_str());
 		/*ImGui::Combo("Monitor", &current_selected_monitor, monitor_names.data(), monitor_names.size());
 		if (current_selected_monitor >= 0) {
 			glm::vec2 monitor_phys_size = monitor_physical_sizes[current_selected_monitor];
@@ -134,6 +222,7 @@ void Application::DrawImGui() {
 		}
 		if (ImGui::TreeNode("Perspective Objects")) {
 			for (SceneObject& scene_obj : perspective_scene_objects) {
+				ImGui::SetNextItemOpen(true);
 				if (ImGui::TreeNode(scene_obj.name.c_str())) {
 					ImGui::DragFloat3("Position", (float*)(void*)&scene_obj.position, 0.005f);
 					ImGui::DragFloat3("Rotation", (float*)(void*)&scene_obj.rotation, 0.25f);
@@ -173,27 +262,28 @@ void Application::SceneObjectSetup()
 	GLuint* cube_indices = Primitives::GetCubeIndices();
 	Mesh cube_mesh(cube_vertices, 24, cube_indices, 36, GL_STATIC_DRAW, GL_TRIANGLES);
 
-	int basic_mesh_shader = CreateShaderFromFiles("shaders/v_basic_mesh.glsl", "shaders/f_basic_mesh.glsl");
+	int debug_mesh_shader = CreateShaderFromFiles("shaders/v_debug_mesh.glsl", "shaders/f_debug_mesh.glsl");
 	int point_cloud_shader = CreateShaderFromFiles("shaders/v_point_cloud.glsl", "shaders/f_point_cloud.glsl");
+	int perspective_mesh_shader = CreateShaderFromFiles("shaders/v_perspective_mesh.glsl", "shaders/f_perspective_mesh.glsl");
 
 	// TODO: find better solution for storing constants like the kinect sensor dimensions
-	SceneObject kinect_sensor("Kinect Sensor", cube_mesh, basic_mesh_shader);
+	SceneObject kinect_sensor("Kinect Sensor", cube_mesh, debug_mesh_shader);
 	kinect_sensor.scale = glm::vec3(0.249f, 0.045f, 0.067f);
 	debug_scene_objects.push_back(kinect_sensor);
 
-	SceneObject world_screen("World Screen", cube_mesh, basic_mesh_shader);
-	world_screen.position = glm::vec3(0.0f, 0.0f, -0.5f);
-	world_screen.scale = glm::vec3(1.0f, 1.0f, 0.05f);
+	SceneObject world_screen("World Screen", cube_mesh, debug_mesh_shader);
+	world_screen.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	world_screen.scale = glm::vec3(0.40f, 0.225f, 0.05f);
 	world_screen.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	debug_scene_objects.push_back(world_screen);
 
-	SceneObject perspective_camera("Perspective Camera", cube_mesh, basic_mesh_shader);
+	SceneObject perspective_camera("Perspective Camera", cube_mesh, debug_mesh_shader);
 	perspective_camera.position = perspective_renderer->camera.position;
 	perspective_camera.scale = glm::vec3(0.1f);
 	debug_scene_objects.push_back(perspective_camera);
 
-	SceneObject cube("Cube", cube_mesh, basic_mesh_shader);
-	cube.position = glm::vec3(0.0f, 0.0f, -2.0f);
+	SceneObject cube("Cube", cube_mesh, perspective_mesh_shader);
+	cube.position = glm::vec3(0.0f, 0.0f, -1.0f);
 	cube.scale = glm::vec3(0.1f);
 	perspective_scene_objects.push_back(cube);
 
@@ -228,9 +318,9 @@ void Application::MainLoop()
 		auto available_faces = kinect_sensor->GetAvailableFaces();
 		for (int i = 0; i < BODY_COUNT; i++) {
 			if (available_faces[i]) {
-				debug_scene_objects[2].position.x = kinect_sensor->GetEyePositions(i)[0]->X;
-				debug_scene_objects[2].position.y = kinect_sensor->GetEyePositions(i)[0]->Y;
-				debug_scene_objects[2].position.z = kinect_sensor->GetEyePositions(i)[0]->Z;
+				perspective_renderer->camera.position.x = kinect_sensor->GetEyePositions(i)[0]->X;
+				perspective_renderer->camera.position.y = kinect_sensor->GetEyePositions(i)[0]->Y;
+				perspective_renderer->camera.position.z = kinect_sensor->GetEyePositions(i)[0]->Z;
 			}
 		}
 		debug_scene_objects[2].position = perspective_renderer->camera.position;
