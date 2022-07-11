@@ -326,6 +326,11 @@ void Application::MainLoop()
 		debug_scene_objects[2].position = perspective_renderer->camera.position;
 		debug_scene_objects[2].rotation = perspective_renderer->camera.direction;
 
+		// Update the parent model matrix of every perspetive object
+		for (SceneObject& scene_object : perspective_scene_objects) {
+			scene_object.parent_model_matrix = debug_scene_objects[1].model_matrix;
+		}
+
 		// Draw
 		debug_renderer->DrawFrame(debug_scene_objects, perspective_scene_objects);
 		debug_renderer->UpdateMousePosition();

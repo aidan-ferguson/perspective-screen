@@ -16,7 +16,7 @@ void SceneObject::UpdateModelMatrix()
 	new_model_matrix = glm::rotate(new_model_matrix, glm::radians(rotation.z), glm::vec3(0.0, 0.0f, 1.0f));
 	new_model_matrix = glm::scale(new_model_matrix, scale);
 
-	model_matrix = new_model_matrix;
+	model_matrix = parent_model_matrix * new_model_matrix;
 }
 
 void SceneObject::Draw(glm::mat4 view_matrix, glm::mat4 projection_matrix)
