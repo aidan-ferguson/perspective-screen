@@ -81,6 +81,7 @@ void PerspectiveRenderer::DrawFrame(std::vector<SceneObject>& scene_objects)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Make camera look at screen
+	// TODO: should camera be looking into scene??? (this will change calibration)
 	camera.direction = glm::normalize(glm::vec3(screen_model_matrix[3]) - camera.position);
 
 	// Calculate minimum viable fov

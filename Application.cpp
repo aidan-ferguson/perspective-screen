@@ -131,7 +131,7 @@ void Application::DrawImGui() {
 	}
 
 	ImVec2 debug_window_size = ImGui::GetWindowSize();
-	// Have resize function in renderer
+	// TODO: Have resize function in renderer
 	if (debug_window_size.x != debug_renderer->renderer_size.x || debug_window_size.y != debug_renderer->renderer_size.y) {
 		glViewport(0, 0, debug_window_size.x, debug_window_size.y);
 		glBindTexture(GL_TEXTURE_2D, debug_renderer->rgb_buffer);
@@ -145,13 +145,13 @@ void Application::DrawImGui() {
 	ImGui::End();
 
 
-	ImGui::Begin("Perspective view");
+	/*ImGui::Begin("Perspective view");
 	ImVec2 perspective_window_size = ImGui::GetWindowSize();
 	if (perspective_window_size.x != perspective_renderer->window_size.x || perspective_window_size.y != perspective_renderer->window_size.y) {
 		perspective_renderer->Resize(perspective_window_size.x, perspective_window_size.y);
 	}
 	ImGui::Image((void*)(intptr_t)perspective_renderer->screen_texture, ImVec2(perspective_window_size.x, perspective_window_size.y), ImVec2(0, 1), ImVec2(1, 0));
-	ImGui::End();
+	ImGui::End();*/
 
 
 	ImGui::Begin("Debug tools");
@@ -188,6 +188,10 @@ void Application::DrawImGui() {
 
 			ImGui::EndCombo();
 		}
+		ImGui::Separator();
+		if (ImGui::Button("Start calibration")) {
+
+		}
 
 		ImGui::Separator();
 		ImGui::Text(std::string("Frame time: " + std::to_string(frame_time * 1000)).c_str());
@@ -220,7 +224,7 @@ void Application::DrawImGui() {
 			}
 			ImGui::TreePop();
 		}
-		if (ImGui::TreeNode("Perspective Objects")) {
+		/*if (ImGui::TreeNode("Perspective Objects")) {
 			for (SceneObject& scene_obj : perspective_scene_objects) {
 				ImGui::SetNextItemOpen(true);
 				if (ImGui::TreeNode(scene_obj.name.c_str())) {
@@ -231,7 +235,7 @@ void Application::DrawImGui() {
 				}
 			}
 			ImGui::TreePop();
-		}
+		}*/
 		ImGui::TreePop();
 	}
 	ImGui::End();
@@ -282,11 +286,6 @@ void Application::SceneObjectSetup()
 	perspective_camera.scale = glm::vec3(0.1f);
 	debug_scene_objects.push_back(perspective_camera);
 
-	SceneObject cube("Cube", cube_mesh, perspective_mesh_shader);
-	cube.position = glm::vec3(0.0f, 0.0f, -1.0f);
-	cube.scale = glm::vec3(0.1f);
-	perspective_scene_objects.push_back(cube);
-
 	// hardcoded values, replace with getting depth frame dimensions from sensor
 	Vertex* depth_vertices = new Vertex[512 * 424];
 	Mesh depth_mesh(depth_vertices, 512 * 424, nullptr, 0, GL_DYNAMIC_DRAW, GL_POINTS);
@@ -307,9 +306,12 @@ void Application::MainLoop()
 
 		// Update kinect data
 		kinect_sensor->GetFrame();
-		if(kinect_sensor->GetColourDepthPoints(debug_renderer->depth_point_cloud.mesh.vertices))
-			debug_renderer->depth_point_cloud.mesh.Update();
-		if(kinect_sensor->GetColouredEyePoints(debug_renderer->eye_point_cloud.mesh.vertices))
+		if (debug_renderer->show_depth_point_cloud) {
+			if (kinect_sensor->GetColourDepthPoints(debug_renderer->depth_point_cloud.mesh.vertices))
+				debug_renderer->depth_point_cloud.mesh.Update();
+		}
+		// TODO: get coloured eye somehow is needed to compute camera position, seperate functionality?
+		if (kinect_sensor->GetColouredEyePoints(debug_renderer->eye_point_cloud.mesh.vertices))
 			debug_renderer->eye_point_cloud.mesh.Update();
 
 		// Update perspective renderer properties
@@ -327,16 +329,20 @@ void Application::MainLoop()
 		debug_scene_objects[2].rotation = perspective_renderer->camera.direction;
 
 		// Update the parent model matrix of every perspetive object
-		for (SceneObject& scene_object : perspective_scene_objects) {
+		/*for (SceneObject& scene_object : perspective_scene_objects) {
 			scene_object.parent_model_matrix = debug_scene_objects[1].model_matrix;
-		}
+		}*/
 
 		// Draw
 		debug_renderer->DrawFrame(debug_scene_objects, perspective_scene_objects);
 		debug_renderer->UpdateMousePosition();
 		
-		perspective_renderer->DrawFrame(perspective_scene_objects);
+		//perspective_renderer->DrawFrame(perspective_scene_objects);
+		// Update Unity camera position information
+		shared_memory.UpdateCameraPosition(perspective_renderer->camera.position);
+		shared_memory.UpdatePerspectiveScreen(debug_scene_objects[1].position, debug_scene_objects[1].rotation, debug_scene_objects[1].scale);
 
+		// Finally draw the UI
 		DrawImGui();
 
 		glfwSwapBuffers(window.get());
