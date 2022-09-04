@@ -160,7 +160,12 @@ void Application::DrawImGui() {
 		ImGui::Checkbox("Render point cloud", &debug_renderer->show_depth_point_cloud);
 		ImGui::Checkbox("Render eye points", &debug_renderer->show_eye_point_cloud);
 		ImGui::DragFloat3("Perspective camera", (float*)(void*)&perspective_renderer->camera.position, 0.005);
-		ImGui::DragFloat("Perspective fov", (float*)(void*)&perspective_renderer->camera.fov, 0.5);
+
+		ImGui::Separator();
+		ImGui::PlotLines("Cam X", cam_hist_x.data(), cam_hist_x.size());
+		ImGui::PlotLines("Cam Y", cam_hist_y.data(), cam_hist_y.size());
+		ImGui::PlotLines("Cam Z", cam_hist_z.data(), cam_hist_z.size());
+		ImGui::DragInt("Position moving lag (frames)", &cam_smoothing_lag, 0, hist_length-1);
 		
 		// Saving and loading of scenes
 		ImGui::Separator();
@@ -301,6 +306,15 @@ void Application::SceneObjectSetup()
 void Application::MainLoop() 
 {
 	while (!(glfwWindowShouldClose(window.get()) || should_program_close)) {
+		cam_hist_x.push_back(perspective_renderer->camera.position.x);
+		cam_hist_y.push_back(perspective_renderer->camera.position.y);
+		cam_hist_z.push_back(perspective_renderer->camera.position.z);
+		if (cam_hist_x.size() > 200) {
+			cam_hist_x.erase(cam_hist_x.begin());
+			cam_hist_y.erase(cam_hist_y.begin());
+			cam_hist_z.erase(cam_hist_z.begin());
+		}
+
 		frame_time = glfwGetTime() - prev_frame_time;
 		prev_frame_time = glfwGetTime();
 
@@ -338,8 +352,34 @@ void Application::MainLoop()
 		debug_renderer->UpdateMousePosition();
 		
 		//perspective_renderer->DrawFrame(perspective_scene_objects);
+		// Calculate smoothing
+		float smoothed_x = 0.0f;
+		for (int i = 0; i <= cam_smoothing_lag; i++) {
+			if (i == cam_hist_x.size()) {
+				break;
+			}
+			smoothed_x += cam_hist_x[cam_hist_x.size() - 1 - i];
+		}
+		smoothed_x /= cam_smoothing_lag;
+		float smoothed_y = 0.0f;
+		for (int i = 0; i <= cam_smoothing_lag; i++) {
+			if (i == cam_hist_y.size()) {
+				break;
+			}
+			smoothed_y += cam_hist_y[cam_hist_y.size() - 1 - i];
+		}
+		smoothed_y /= cam_smoothing_lag;
+		float smoothed_z = 0.0f;
+		for (int i = 0; i <= cam_smoothing_lag; i++) {
+			if (i == cam_hist_z.size()) {
+				break;
+			}
+			smoothed_z += cam_hist_z[cam_hist_z.size() - 1 - i];
+		}
+		smoothed_z /= cam_smoothing_lag;
+
 		// Update Unity camera position information
-		shared_memory.UpdateCameraPosition(perspective_renderer->camera.position);
+		shared_memory.UpdateCameraPosition(glm::vec3(smoothed_x, smoothed_y, smoothed_z));
 		shared_memory.UpdatePerspectiveScreen(debug_scene_objects[1].position, debug_scene_objects[1].rotation, debug_scene_objects[1].scale);
 
 		// Finally draw the UI
