@@ -87,7 +87,7 @@
     <ClCompile Include="OpenGLUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UnitySharedMemory.cpp">
+    <ClCompile Include="SharedMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -131,7 +131,7 @@
     <ClInclude Include="OpenGLUtility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UnitySharedMemory.h">
+    <ClInclude Include="SharedMemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

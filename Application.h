@@ -16,7 +16,7 @@
 #include "DebugRenderer.h"
 #include "PerspectiveRenderer.h"
 #include "KinectSensor.h"
-#include "UnitySharedMemory.h"
+#include "SharedMemory.h"
 
 class Application
 {
@@ -42,8 +42,11 @@ private:
 	std::vector<SceneObject> debug_scene_objects;
 	std::vector<SceneObject> perspective_scene_objects;
 
-	double frame_time = 0, prev_frame_time = 0;
+	float frame_limit_ms = 1.0f / 60.0f;
+	double frame_time = 0, prev_frame_time = 0, t_since_last_frame = 0;
+
 	bool should_program_close = false;
+	bool update_kinect_data = false;
 
 	const std::string config_path = ".\\config";
 	std::vector<std::string> config_files = {};

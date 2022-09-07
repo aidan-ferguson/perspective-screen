@@ -169,7 +169,7 @@
     <ClCompile Include="PointCloud.cpp" />
     <ClCompile Include="Primitives.cpp" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="UnitySharedMemory.cpp" />
+    <ClCompile Include="SharedMemory.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -185,7 +185,7 @@
     <ClInclude Include="PointCloud.h" />
     <ClInclude Include="Primitives.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="UnitySharedMemory.h" />
+    <ClInclude Include="SharedMemory.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>

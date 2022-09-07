@@ -157,6 +157,7 @@ void Application::DrawImGui() {
 	ImGui::Begin("Debug tools");
 	ImGui::SetNextItemOpen(true);
 	if (ImGui::TreeNode("General options")) {
+		ImGui::Checkbox("Update Kinect Data", &update_kinect_data);
 		ImGui::Checkbox("Render point cloud", &debug_renderer->show_depth_point_cloud);
 		ImGui::Checkbox("Render eye points", &debug_renderer->show_eye_point_cloud);
 		ImGui::DragFloat3("Perspective camera", (float*)(void*)&perspective_renderer->camera.position, 0.005);
@@ -213,7 +214,9 @@ void Application::DrawImGui() {
 		}
 
 		ImGui::Separator();
-		ImGui::Text(std::string("Frame time: " + std::to_string(frame_time * 1000)).c_str());
+		ImGui::DragFloat("Frame time Limit (ms)", &frame_limit_ms);
+		ImGui::Text(std::string("Real frame time: " + std::to_string(frame_time * 1000)).c_str());
+		ImGui::Separator();
 		/*ImGui::Combo("Monitor", &current_selected_monitor, monitor_names.data(), monitor_names.size());
 		if (current_selected_monitor >= 0) {
 			glm::vec2 monitor_phys_size = monitor_physical_sizes[current_selected_monitor];
@@ -320,6 +323,15 @@ void Application::SceneObjectSetup()
 void Application::MainLoop() 
 {
 	while (!(glfwWindowShouldClose(window.get()) || should_program_close)) {
+
+		// Fps limit
+		t_since_last_frame = glfwGetTime() - prev_frame_time;
+		if (t_since_last_frame < frame_limit_ms) {
+			Sleep(((frame_limit_ms - t_since_last_frame)*1000)/2);
+			continue;
+		}
+		t_since_last_frame = 0;
+
 		cam_hist_x.push_back(perspective_renderer->camera.position.x);
 		cam_hist_y.push_back(perspective_renderer->camera.position.y);
 		cam_hist_z.push_back(perspective_renderer->camera.position.z);
@@ -333,28 +345,31 @@ void Application::MainLoop()
 		prev_frame_time = glfwGetTime();
 
 		// Update kinect data
-		kinect_sensor->GetFrame();
-		if (debug_renderer->show_depth_point_cloud) {
-			if (kinect_sensor->GetColourDepthPoints(debug_renderer->depth_point_cloud.mesh.vertices))
-				debug_renderer->depth_point_cloud.mesh.Update();
-		}
-		// TODO: get coloured eye somehow is needed to compute camera position, seperate functionality?
-		if (kinect_sensor->GetColouredEyePoints(debug_renderer->eye_point_cloud.mesh.vertices))
-			debug_renderer->eye_point_cloud.mesh.Update();
-
-		// Update perspective renderer properties
-		// World screen is position 1 in vector TODO: maybe have hashmap for easy access?
-		perspective_renderer->screen_model_matrix = debug_scene_objects[1].model_matrix;
-		auto available_faces = kinect_sensor->GetAvailableFaces();
-		for (int i = 0; i < BODY_COUNT; i++) {
-			if (available_faces[i]) {
-				perspective_renderer->camera.position.x = kinect_sensor->GetEyePositions(i)[0]->X;
-				perspective_renderer->camera.position.y = kinect_sensor->GetEyePositions(i)[0]->Y;
-				perspective_renderer->camera.position.z = kinect_sensor->GetEyePositions(i)[0]->Z;
+		if (update_kinect_data) {
+			kinect_sensor->GetFrame();
+			if (debug_renderer->show_depth_point_cloud) {
+				if (kinect_sensor->GetColourDepthPoints(debug_renderer->depth_point_cloud.mesh.vertices))
+					debug_renderer->depth_point_cloud.mesh.Update();
 			}
+			// TODO: get coloured eye somehow is needed to compute camera position, seperate functionality?
+			if (kinect_sensor->GetColouredEyePoints(debug_renderer->eye_point_cloud.mesh.vertices))
+				debug_renderer->eye_point_cloud.mesh.Update();
+
+
+			// Update perspective renderer properties
+			// World screen is position 1 in vector TODO: maybe have hashmap for easy access?
+			perspective_renderer->screen_model_matrix = debug_scene_objects[1].model_matrix;
+			auto available_faces = kinect_sensor->GetAvailableFaces();
+			for (int i = 0; i < BODY_COUNT; i++) {
+				if (available_faces[i]) {
+					perspective_renderer->camera.position.x = kinect_sensor->GetEyePositions(i)[0]->X;
+					perspective_renderer->camera.position.y = kinect_sensor->GetEyePositions(i)[0]->Y;
+					perspective_renderer->camera.position.z = kinect_sensor->GetEyePositions(i)[0]->Z;
+				}
+			}
+			debug_scene_objects[2].position = perspective_renderer->camera.position;
+			debug_scene_objects[2].rotation = perspective_renderer->camera.direction;
 		}
-		debug_scene_objects[2].position = perspective_renderer->camera.position;
-		debug_scene_objects[2].rotation = perspective_renderer->camera.direction;
 
 		// Update the parent model matrix of every perspetive object
 		/*for (SceneObject& scene_object : perspective_scene_objects) {

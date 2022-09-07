@@ -7,7 +7,8 @@
 class SharedMemory
 {
 private:
-	const char* n_shared_memory = "UnityPerspectiveScreen";
+	// Unreal engine requires a GUID name for non Global/ shared memory regions :)
+	const char* n_shared_memory = "{49249102-8471-0183-8543-087541369818}";
 	int memory_sz = 12 * sizeof(float);
 
 	int camera_position_offset = 0;
