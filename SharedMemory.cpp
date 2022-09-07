@@ -1,6 +1,6 @@
-#include "UnitySharedMemory.h"
+#include "SharedMemory.h"
 
-UnitySharedMemory::UnitySharedMemory()
+SharedMemory::SharedMemory()
 {
     TCHAR szName[] = TEXT("UnityPerspectiveScreen");
     hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, memory_sz, szName);
@@ -23,18 +23,18 @@ UnitySharedMemory::UnitySharedMemory()
     std::cout << "memory mapped" << std::endl;
 }
 
-UnitySharedMemory::~UnitySharedMemory()
+SharedMemory::~SharedMemory()
 {
     UnmapViewOfFile(s_memory);
     CloseHandle(hMapFile);
 }
 
-void UnitySharedMemory::UpdateCameraPosition(glm::vec3 position)
+void SharedMemory::UpdateCameraPosition(glm::vec3 position)
 {
     memcpy(s_memory + camera_position_offset, &position, sizeof(float) * 3);
 }
 
-void UnitySharedMemory::UpdatePerspectiveScreen(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
+void SharedMemory::UpdatePerspectiveScreen(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
 {
     memcpy(s_memory + perspective_screen_offset, &position, sizeof(float) * 3);
     memcpy(s_memory + perspective_screen_offset + 3, &rotation, sizeof(float) * 3);

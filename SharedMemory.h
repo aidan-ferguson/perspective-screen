@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 
-class UnitySharedMemory
+class SharedMemory
 {
 private:
 	const char* n_shared_memory = "UnityPerspectiveScreen";
@@ -17,8 +17,8 @@ private:
 	HANDLE hMapFile;
 
 public:
-	UnitySharedMemory();
-	~UnitySharedMemory();
+	SharedMemory();
+	~SharedMemory();
 	void UpdateCameraPosition(glm::vec3 position);
 	void UpdatePerspectiveScreen(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 };

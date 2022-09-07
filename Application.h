@@ -37,7 +37,7 @@ private:
 	std::shared_ptr<DebugRenderer> debug_renderer = nullptr;
 	std::shared_ptr<PerspectiveRenderer> perspective_renderer = nullptr;
 	std::shared_ptr<KinectSensor> kinect_sensor = nullptr;
-	UnitySharedMemory shared_memory;
+	SharedMemory shared_memory;
 
 	std::vector<SceneObject> debug_scene_objects;
 	std::vector<SceneObject> perspective_scene_objects;

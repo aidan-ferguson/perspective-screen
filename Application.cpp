@@ -199,6 +199,20 @@ void Application::DrawImGui() {
 		}
 
 		ImGui::Separator();
+		ImGui::Text("Connected monitors");
+		int count;
+		GLFWmonitor** monitors = glfwGetMonitors(&count);
+		
+		for (int monitor = 0; monitor < count; monitor++) {
+			int width, height;
+			char* name = (char*)glfwGetMonitorName(monitors[monitor]);
+			glfwGetMonitorPhysicalSize(monitors[monitor], &width, &height);
+
+			std::string monitor_text = name + std::string(": ") + std::to_string(width) + "mm x " + std::to_string(height) + "mm";
+			ImGui::Text(monitor_text.c_str());
+		}
+
+		ImGui::Separator();
 		ImGui::Text(std::string("Frame time: " + std::to_string(frame_time * 1000)).c_str());
 		/*ImGui::Combo("Monitor", &current_selected_monitor, monitor_names.data(), monitor_names.size());
 		if (current_selected_monitor >= 0) {
