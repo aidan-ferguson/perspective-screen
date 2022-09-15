@@ -383,7 +383,7 @@ void Application::MainLoop()
 		//perspective_renderer->DrawFrame(perspective_scene_objects);
 		// Calculate smoothing
 		float smoothed_x = 0.0f;
-		for (int i = 0; i <= cam_smoothing_lag; i++) {
+		for (int i = 0; i < cam_smoothing_lag; i++) {
 			if (i == cam_hist_x.size()) {
 				break;
 			}
@@ -391,7 +391,7 @@ void Application::MainLoop()
 		}
 		smoothed_x /= cam_smoothing_lag;
 		float smoothed_y = 0.0f;
-		for (int i = 0; i <= cam_smoothing_lag; i++) {
+		for (int i = 0; i < cam_smoothing_lag; i++) {
 			if (i == cam_hist_y.size()) {
 				break;
 			}
@@ -399,7 +399,7 @@ void Application::MainLoop()
 		}
 		smoothed_y /= cam_smoothing_lag;
 		float smoothed_z = 0.0f;
-		for (int i = 0; i <= cam_smoothing_lag; i++) {
+		for (int i = 0; i < cam_smoothing_lag; i++) {
 			if (i == cam_hist_z.size()) {
 				break;
 			}

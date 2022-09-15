@@ -2,7 +2,7 @@
 
 SharedMemory::SharedMemory()
 {
-    TCHAR szName[] = TEXT("UnityPerspectiveScreen");
+    TCHAR szName[] = TEXT("PerspectiveScreen");
     hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, memory_sz, szName);
     if (hMapFile == NULL) {
         std::cout << "Failed to create file mapping: " << GetLastError() << std::endl;
@@ -19,8 +19,6 @@ SharedMemory::SharedMemory()
 
         exit(1);
     }
-
-    std::cout << "memory mapped" << std::endl;
 }
 
 SharedMemory::~SharedMemory()
