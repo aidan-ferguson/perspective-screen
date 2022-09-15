@@ -53,10 +53,8 @@ private:
 	char save_filename_buffer[128] = "Hello, world!";
 	int selected_config = -1;
 
-	int hist_length = 200;
-	std::vector<float> cam_hist_x;
-	std::vector<float> cam_hist_y;
-	std::vector<float> cam_hist_z;
+	int cam_hist_sz = 200;
+	std::vector<glm::vec3> cam_hist;
 
 	int cam_smoothing_lag = 5;
 };
